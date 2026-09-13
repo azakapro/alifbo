@@ -81,7 +81,11 @@ function warning(
 }
 
 /** Rewrite warning ranges from prepared-text offsets to offsets in the caller's text. */
-function toSourceOffsets(warnings: Warning[], origins: readonly number[], offset: number): void {
+function toSourceOffsets(
+  warnings: Warning[],
+  origins: readonly number[] | null,
+  offset: number,
+): void {
   for (const item of warnings) {
     const range = sourceRange(origins, item.index, item.length);
     item.index = offset + range.index;

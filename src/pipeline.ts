@@ -1,6 +1,6 @@
 import seedExceptions from './data/exceptions.json';
 import seedProtectedTerms from './data/protected-terms.json';
-import type { MappedText } from './normalize.js';
+import { originAt, type MappedText } from './normalize.js';
 import type { ConversionOptions, Warning } from './types.js';
 
 interface Span {
@@ -82,7 +82,9 @@ export function applyExceptions(source: MappedText, options: ConversionOptions):
     .filter(([key]) => key.length > 0)
     .sort(([left], [right]) => right.length - left.length);
   let result = '';
-  const resultOrigins: number[] = [];
+  // Stays null (positions unchanged) until a replacement changes length. Same-length
+  // replacements keep every later position, so offsets only need recording after that.
+  let resultOrigins: number[] | null = origins === null ? null : [];
   let cursor = 0;
   while (cursor < text.length) {
     let replacement: { key: string; value: string } | undefined;
@@ -97,18 +99,22 @@ export function applyExceptions(source: MappedText, options: ConversionOptions):
       }
     }
     if (replacement !== undefined) {
+      if (resultOrigins === null && replacement.value.length !== replacement.key.length) {
+        resultOrigins = Array.from({ length: result.length }, (_, index) => index);
+      }
       result += replacement.value;
-      for (let unit = 0; unit < replacement.value.length; unit += 1) {
-        resultOrigins.push(origins[cursor]!);
+      if (resultOrigins !== null) {
+        const start = originAt(origins, cursor);
+        for (let unit = 0; unit < replacement.value.length; unit += 1) resultOrigins.push(start);
       }
       cursor += replacement.key.length;
     } else {
       result += text[cursor];
-      resultOrigins.push(origins[cursor]!);
+      resultOrigins?.push(originAt(origins, cursor));
       cursor += 1;
     }
   }
-  resultOrigins.push(origins[text.length]!);
+  resultOrigins?.push(originAt(origins, text.length));
   return { text: result, origins: resultOrigins };
 }
 
@@ -135,20 +141,17 @@ export function mapSegments(
 export function mapSegmentsMapped(
   text: string,
   options: ConversionOptions,
-  convert: (text: string, start: number) => MappedText,
-): MappedText {
+  convert: (text: string, start: number) => { text: string; origins: number[] },
+): { text: string; origins: number[] } {
   let output = '';
   const origins: number[] = [];
   for (const segment of splitProtected(text, options)) {
-    const converted = segment.protected
-      ? {
-          text: segment.text,
-          origins: Array.from(
-            { length: segment.text.length + 1 },
-            (_, index) => segment.start + index,
-          ),
-        }
-      : convert(segment.text, segment.start);
+    if (segment.protected) {
+      output += segment.text;
+      for (let unit = 0; unit < segment.text.length; unit += 1) origins.push(segment.start + unit);
+      continue;
+    }
+    const converted = convert(segment.text, segment.start);
     output += converted.text;
     // A loop rather than push(...spread), which overflows the stack on long documents.
     for (let unit = 0; unit < converted.text.length; unit += 1) {
