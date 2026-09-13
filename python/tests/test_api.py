@@ -128,6 +128,15 @@ def test_detect_alphabet(text: str, alphabet: str):
     assert 0 <= result.confidence <= 1
 
 
+def test_detect_alphabet_cyrillic_confidence_scales_with_evidence():
+    one = detect_alphabet("Ў")
+    sentence = detect_alphabet("Ўзбекистонда қишлоқ хўжалиги ривожланмоқда")
+    assert one.alphabet == "cyrillic"
+    assert sentence.alphabet == "cyrillic"
+    assert 0 < one.confidence < 1
+    assert one.confidence < sentence.confidence <= 1
+
+
 def test_round_trips_unambiguous_old_latin():
     state = 0x5EED1234
     tokens = [

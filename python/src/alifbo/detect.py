@@ -26,7 +26,13 @@ def detect_alphabet(text: str) -> AlphabetDetection:
     if cyrillic > 0 and latin > 0:
         return AlphabetDetection("mixed", 1.0)
     if cyrillic > 0:
-        return AlphabetDetection("cyrillic", cyrillic / max(1, cyrillic))
+        uzbek_specific = len(re.findall("[ЎўҚқҒғҲҳ]", source))
+        length_factor = min(1.0, cyrillic / 8)
+        specific_factor = uzbek_specific / cyrillic
+        return AlphabetDetection(
+            "cyrillic",
+            min(1.0, 0.55 + 0.35 * length_factor + 0.1 * specific_factor),
+        )
     if new_markers > 0 and old_markers > 0:
         return AlphabetDetection("mixed", 0.9)
     if new_markers > 0:
