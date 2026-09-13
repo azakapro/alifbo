@@ -4,3 +4,10 @@ coverage/
 .DS_Store
 _site/
 .claude/
+python/.venv/
+python/dist/
+python/build/
+*.egg-info/
+__pycache__/
+.pytest_cache/
+.ruff_cache/

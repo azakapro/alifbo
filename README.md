@@ -50,6 +50,22 @@ CommonJS is supported too:
 const { toNewLatin } = require('alifbo');
 ```
 
+### Python
+
+A Python 3.9+ port with the same behavior and snake_case names lives in [`python/`](./python/README.md):
+
+```sh
+pip install alifbo
+```
+
+```python
+from alifbo import to_new_latin
+
+to_new_latin("O'zbekiston shaharlari").text  # 'Özbekiston şaharlari'
+```
+
+Its warning offsets are Python string indexes rather than UTF-16 offsets; see the [Python README](./python/README.md) for details.
+
 The public functions are:
 
 - `toNewLatin(text, options)` — previous Latin to new Latin.

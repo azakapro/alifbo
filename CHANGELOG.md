@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- Python port in `python/` (`pip install alifbo`) with the same behavior, snake_case names, and Python string-index warning offsets. A parity fixture generated from the TypeScript build by `scripts/gen-python-parity.mjs` keeps the two in sync, and CI checks it.
+
 ## [0.1.1] - 2026-09-13
 
 ### Added
