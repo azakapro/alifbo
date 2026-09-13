@@ -61,9 +61,9 @@ Do not change `ng` based on a news report alone. Link the enacted lex.uz text in
 
 ## Releasing (maintainers)
 
-Releases are published by `.github/workflows/publish.yml` using npm trusted publishing, so no npm token is stored anywhere.
+Releases are published by `.github/workflows/publish.yml` to npm and PyPI using trusted publishing, so no registry token is stored anywhere. The npm and Python packages always share one version.
 
-1. Update `CHANGELOG.md` and bump the version: `npm version patch --no-git-tag-version` (or `minor`).
+1. Update `CHANGELOG.md`, bump the version with `npm version patch --no-git-tag-version` (or `minor`), and set the same version in `python/pyproject.toml`.
 2. Open a pull request with those changes and merge it once CI passes.
 3. Tag the merge commit on `main` and push the tag:
 
@@ -73,4 +73,4 @@ Releases are published by `.github/workflows/publish.yml` using npm trusted publ
    git push origin v0.1.2
    ```
 
-The workflow checks that the tag matches `package.json`, runs `npm run check`, publishes to npm with provenance, and creates the GitHub release with generated notes. Do not run `npm publish` locally.
+The workflow checks that the tag matches `package.json`, runs `npm run check`, publishes to npm and PyPI with provenance, and creates the GitHub release with generated notes. Do not run `npm publish` or `uv publish` locally.

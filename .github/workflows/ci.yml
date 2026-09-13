@@ -22,3 +22,36 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm pack --dry-run
+
+  python:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.13']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Verify the committed parity fixture is up to date
+        run: |
+          node scripts/gen-python-parity.mjs
+          git diff --exit-code python/tests/parity.json
+      # setup-uv no longer publishes floating major tags, so pin the release.
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Lint
+        working-directory: python
+        run: |
+          uv run --with ruff ruff check .
+          uv run --with ruff ruff format --check .
+      - name: Test
+        working-directory: python
+        run: uv run --with pytest pytest

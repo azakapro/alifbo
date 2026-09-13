@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "alifbo"
+version = "0.1.1"
+description = "Uzbek transliteration between Cyrillic, old Latin, and the 2026 Latin alphabet"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "azakapro" }]
+keywords = ["uzbek", "transliteration", "cyrillic", "latin", "unicode", "normalization"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Text Processing :: Linguistic",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/azakapro/alifbo"
+Repository = "https://github.com/azakapro/alifbo"
+Issues = "https://github.com/azakapro/alifbo/issues"
+Changelog = "https://github.com/azakapro/alifbo/blob/main/CHANGELOG.md"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/alifbo"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/alifbo", "README.md", "LICENSE", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+# Keep typing.Optional/Tuple spellings that read naturally on Python 3.9.
+ignore = ["UP006", "UP007", "UP035", "UP045", "RUF001", "RUF002", "RUF003"]
