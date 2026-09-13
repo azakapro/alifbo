@@ -1,0 +1,58 @@
+name: Bug report
+description: Report incorrect conversion, warnings, packaging, or CLI behavior.
+title: 'bug: '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping make Uzbek transliteration more reliable. Do not paste private or sensitive text.
+  - type: input
+    id: version
+    attributes:
+      label: alifbo version
+      placeholder: 0.1.1
+    validations:
+      required: true
+  - type: dropdown
+    id: api
+    attributes:
+      label: API or interface
+      options:
+        - toNewLatin
+        - toOldLatin
+        - fromCyrillic
+        - toCyrillic
+        - foldSearchKey
+        - foldSearchKeyLoose
+        - normalizeApostrophes
+        - normalizeConfusables
+        - detectAlphabet
+        - CLI
+        - Packaging or types
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include exact input codepoints when confusable characters are involved.
+      render: ts
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and warnings
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: Node 20, Chrome 140, Vite 7, etc.

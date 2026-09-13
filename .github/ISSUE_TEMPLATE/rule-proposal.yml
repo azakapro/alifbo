@@ -1,0 +1,47 @@
+name: Transliteration rule or exception
+description: Propose a verified rule, exception entry, or golden corpus case.
+title: 'rule: '
+labels: [linguistics]
+body:
+  - type: markdown
+    attributes:
+      value: Rules must be supported by an authoritative source or attested corpus example. Uncertainty should remain explicit.
+  - type: dropdown
+    id: direction
+    attributes:
+      label: Conversion direction
+      options:
+        - Old Latin to new Latin
+        - New Latin to old Latin
+        - Cyrillic to new Latin
+        - New Latin to Cyrillic
+        - Normalization
+        - Search folding
+    validations:
+      required: true
+  - type: input
+    id: input
+    attributes:
+      label: Exact input
+    validations:
+      required: true
+  - type: input
+    id: expected
+    attributes:
+      label: Expected output
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Link the law, dictionary, publication, or corpus example and explain what it establishes.
+    validations:
+      required: true
+  - type: textarea
+    id: ambiguity
+    attributes:
+      label: Known ambiguity or alternatives
+      description: Explain why this is a general rule, an exception, or still unresolved.
+    validations:
+      required: true

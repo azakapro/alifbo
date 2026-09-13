@@ -1,5 +1,9 @@
 # alifbo
 
+[![CI](https://github.com/azakapro/alifbo/actions/workflows/ci.yml/badge.svg)](https://github.com/azakapro/alifbo/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/alifbo)](https://www.npmjs.com/package/alifbo)
+[![license](https://img.shields.io/npm/l/alifbo)](./LICENSE)
+
 `alifbo` is a zero-runtime-dependency TypeScript library for converting Uzbek text between Cyrillic, the previous Latin alphabet, and the Latin alphabet approved by Uzbekistan's Senate in September 2026. It is designed to expose uncertainty instead of hiding it.
 
 The package works in Node 20+ and browsers, and publishes ESM, CommonJS, and TypeScript declarations. The core API is pure: it performs no I/O, network access, or environment inspection.
@@ -36,6 +40,12 @@ fromCyrillic('Елена');
 // }
 
 foldSearchKey('Шавкат') === foldSearchKey('Shavkat'); // true
+```
+
+CommonJS is supported too:
+
+```js
+const { toNewLatin } = require('alifbo');
 ```
 
 The public functions are:
@@ -120,6 +130,11 @@ alifbo convert --to old-latin < input.txt > output.txt
 ```
 
 Input files are read without modification. Converted text is written to standard output.
+Ambiguity warnings are written separately to standard error, so redirected output remains clean:
+
+```text
+alifbo: warning [cyrillic.e.positional] at 0:1: ...
+```
 
 ## Development
 
@@ -128,4 +143,4 @@ npm ci
 npm run check
 ```
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for adding exceptions and golden cases. Released under the MIT License.
+See the [contribution guide](https://github.com/azakapro/alifbo/blob/main/CONTRIBUTING.md) for adding exceptions and golden cases, the [changelog](./CHANGELOG.md) for release history, and the [security policy](https://github.com/azakapro/alifbo/security/policy) for private vulnerability reporting. Released under the MIT License.
