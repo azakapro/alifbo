@@ -143,4 +143,6 @@ npm ci
 npm run check
 ```
 
-See the [contribution guide](https://github.com/azakapro/alifbo/blob/main/CONTRIBUTING.md) for adding exceptions and golden cases, the [changelog](./CHANGELOG.md) for release history, and the [security policy](https://github.com/azakapro/alifbo/security/policy) for private vulnerability reporting. Released under the MIT License.
+Using an AI coding assistant? Give it the [AI integration guide](https://github.com/azakapro/alifbo/blob/main/docs/AI_USAGE.md). Agents modifying this repository should follow [AGENTS.md](https://github.com/azakapro/alifbo/blob/main/AGENTS.md).
+
+See the [contribution guide](https://github.com/azakapro/alifbo/blob/main/CONTRIBUTING.md) for adding exceptions and golden cases, the [changelog](./CHANGELOG.md) for release history, and the [security policy](https://github.com/azakapro/alifbo/security/policy) for vulnerability reporting. Released under the MIT License.
