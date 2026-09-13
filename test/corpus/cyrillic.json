@@ -1,0 +1,8 @@
+[
+  { "input": "Шавкат", "expected": "Şavkat", "rule": "cyrillic.basic", "note": "basic mapping" },
+  { "input": "Елена, театр", "expected": "Yelena, teatr", "rule": "cyrillic.e.positional", "note": "word-start ye, medial e" },
+  { "input": "цирк пицца", "expected": "sirk pitssa", "rule": "cyrillic.tse.ambiguous", "note": "word start s, medial ts" },
+  { "input": "щёлк", "expected": "şçyolk", "rule": "cyrillic.compound", "note": "shcha and yo" },
+  { "input": "объект роль", "expected": "obʼyekt rol", "rule": "cyrillic.signs", "note": "hard sign to tutuq, soft sign dropped" },
+  { "input": "Юлдуз Яхё", "expected": "Yulduz Yahyo", "rule": "cyrillic.iotated", "note": "yu, ya, yo" }
+]

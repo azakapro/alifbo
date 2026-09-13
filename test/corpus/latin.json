@@ -1,0 +1,8 @@
+[
+  { "input": "sh ch oʻ gʻ", "expected": "ş ç ö ğ", "rule": "latin.lower", "note": "lowercase" },
+  { "input": "Sh Ch Oʻ Gʻ", "expected": "Ş Ç Ö Ğ", "rule": "latin.title", "note": "title case" },
+  { "input": "SH CH Oʻ Gʻ", "expected": "Ş Ç Ö Ğ", "rule": "latin.upper", "note": "uppercase first character controls output" },
+  { "input": "SHAHAR", "expected": "ŞAHAR", "rule": "latin.upper-word", "note": "uppercase word" },
+  { "input": "asʼhob Isʼhoq", "expected": "asʼhob Isʼhoq", "rule": "latin.s-h-boundary", "note": "tutuq prevents digraph" },
+  { "input": "ashob Ishoq", "expected": "asʼhob Isʼhoq", "rule": "latin.seed-exception", "note": "known dropped-tutuq words" }
+]
