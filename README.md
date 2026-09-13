@@ -111,9 +111,9 @@ Inspect `warnings` whenever converting to or from Cyrillic, and use a word excep
 
 The implementation never calls `toUpperCase()` or `toLowerCase()`. It uses explicit case tables for Latin and Cyrillic. This avoids the Turkish-locale `i` → `İ` and `I` → `ı` trap, which can silently corrupt Uzbek identifiers and search keys.
 
-## TODO: authoritative `ng` rule
+## The `ng` rule
 
-**TODO:** confirm the final treatment of `ng` against the enacted law text when it appears in the [QL-236 record on lex.uz](https://lex.uz/docs/-8413368). Reports conflict on whether `ng` remains an alphabetic digraph. `ngAsDigraph` therefore defaults to `true`. With that setting it is consumed atomically and left unchanged. Setting it to `false` treats `n` and `g` as ordinary adjacent letters; the visible result is currently still `ng`. The behavior is isolated behind the single `NG_DIGRAPH_OUTPUT` data constant so an authoritative replacement requires no pipeline refactor.
+Reporting on the Senate-approved text [says](https://www.gazeta.uz/en/2026/09/10/uzb-alphabet/) that `ng` is removed from the alphabet as a letter, but the letter combination itself is kept and governed by spelling rules. Either way, `ng` is written as `ng`. This still needs to be confirmed against the enacted law text in the [QL-236 record on lex.uz](https://lex.uz/docs/-8413368). Until then, `ngAsDigraph` defaults to `true`. With that setting it is consumed atomically and left unchanged. Setting it to `false` treats `n` and `g` as ordinary adjacent letters; the visible result is currently still `ng`. The behavior is isolated behind the single `NG_DIGRAPH_OUTPUT` data constant so an authoritative replacement requires no pipeline refactor.
 
 ## Deliberate non-goals
 
@@ -143,4 +143,6 @@ npm ci
 npm run check
 ```
 
-See the [contribution guide](https://github.com/azakapro/alifbo/blob/main/CONTRIBUTING.md) for adding exceptions and golden cases, the [changelog](./CHANGELOG.md) for release history, and the [security policy](https://github.com/azakapro/alifbo/security/policy) for private vulnerability reporting. Released under the MIT License.
+Using an AI coding assistant? Give it the [AI integration guide](https://github.com/azakapro/alifbo/blob/main/docs/AI_USAGE.md). Agents modifying this repository should follow [AGENTS.md](https://github.com/azakapro/alifbo/blob/main/AGENTS.md).
+
+See the [contribution guide](https://github.com/azakapro/alifbo/blob/main/CONTRIBUTING.md) for adding exceptions and golden cases, the [changelog](./CHANGELOG.md) for release history, and the [security policy](https://github.com/azakapro/alifbo/security/policy) for vulnerability reporting. Released under the MIT License.
