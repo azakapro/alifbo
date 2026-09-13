@@ -82,6 +82,7 @@ function newLatinCore(text: string, options: ConversionOptions): string {
   return output.normalize('NFC');
 }
 
+/** Convert previous Uzbek Latin text to the new Latin alphabet. */
 export function toNewLatin(text: string, options: ConversionOptions = {}): ConversionResult {
   return mapSegments(text, options, (segment) => ({
     text: oldLatinCore(segment, options),
@@ -89,6 +90,7 @@ export function toNewLatin(text: string, options: ConversionOptions = {}): Conve
   }));
 }
 
+/** Convert new Uzbek Latin text to the previous Latin alphabet. */
 export function toOldLatin(text: string, options: ConversionOptions = {}): ConversionResult {
   return mapSegments(text, options, (segment) => ({
     text: newLatinCore(segment, options),

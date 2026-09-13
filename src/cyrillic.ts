@@ -175,6 +175,7 @@ function fromCyrillicCore(
   return { text: oldLatinCore(output, options).normalize('NFC'), warnings };
 }
 
+/** Convert Uzbek Cyrillic to new Latin and report every lossy or ambiguous choice. */
 export function fromCyrillic(text: string, options: ConversionOptions = {}): ConversionResult {
   return mapSegments(text, options, (segment, start) => fromCyrillicCore(segment, start, options));
 }
@@ -273,6 +274,7 @@ function toCyrillicCore(text: string, offset: number): ConversionResult {
   return { text: output.normalize('NFC'), warnings };
 }
 
+/** Convert new Uzbek Latin to Cyrillic and report every lossy or ambiguous choice. */
 export function toCyrillic(text: string, options: ConversionOptions = {}): ConversionResult {
   const canonical = toNewLatin(text, options).text;
   return mapSegments(canonical, options, (segment, start) => toCyrillicCore(segment, start));

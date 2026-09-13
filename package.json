@@ -1,7 +1,24 @@
 {
   "name": "alifbo",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Uzbek transliteration between Cyrillic, old Latin, and the 2026 Latin alphabet",
+  "keywords": [
+    "uzbek",
+    "transliteration",
+    "cyrillic",
+    "latin",
+    "unicode",
+    "normalization",
+    "typescript"
+  ],
+  "homepage": "https://github.com/azakapro/alifbo#readme",
+  "bugs": {
+    "url": "https://github.com/azakapro/alifbo/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azakapro/alifbo.git"
+  },
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -11,6 +28,7 @@
   "files": [
     "dist",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "main": "./dist/index.cjs",
@@ -34,19 +52,25 @@
   "scripts": {
     "build": "tsup src/index.ts src/cli.ts --format esm,cjs --dts --clean --splitting false",
     "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke": "node scripts/smoke-package.mjs",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "check": "npm run build && npm run lint && npm test"
+    "check": "npm run build && npm run lint && npm test && npm run smoke",
+    "prepublishOnly": "npm run check"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
     "@types/node": "^22.18.0",
     "eslint": "^9.35.0",
     "prettier": "^3.6.2",
-    "tsx": "^4.20.5",
+    "tsx": "^4.23.13",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.42.0",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "esbuild": "^0.28.2"
   }
 }

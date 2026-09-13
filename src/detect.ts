@@ -1,6 +1,7 @@
 import { normalizeConfusables } from './normalize.js';
 import type { Alphabet } from './types.js';
 
+/** Return a best-effort alphabet classification and confidence score between zero and one. */
 export function detectAlphabet(text: string): { alphabet: Alphabet; confidence: number } {
   const source = normalizeConfusables(text);
   const cyrillic = (source.match(/[А-Яа-яЁёЎўҚқҒғҲҳ]/gu) ?? []).length;
