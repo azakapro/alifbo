@@ -53,7 +53,7 @@
     "build": "tsup src/index.ts src/cli.ts --format esm,cjs --dts --clean --splitting false",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke": "node scripts/smoke-package.mjs",
+    "smoke": "node scripts/smoke-package.mjs && node scripts/smoke-browser.mjs",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "check": "npm run build && npm run lint && npm test && npm run smoke",
@@ -62,6 +62,7 @@
   "devDependencies": {
     "@eslint/js": "^9.35.0",
     "@types/node": "^22.18.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9.35.0",
     "prettier": "^3.6.2",
     "tsx": "^4.23.13",

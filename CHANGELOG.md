@@ -9,7 +9,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Added
 
 - Repository, issue tracker, homepage, and discovery metadata for npm.
-- ESM, CommonJS, and CLI smoke verification in the release check.
+- ESM, CommonJS, CLI, and browser-bundle smoke verification in the release check.
 - Node 20 and Node 22 CI coverage.
 - Community health files, structured issue forms, and release notes configuration.
 - CLI help output.

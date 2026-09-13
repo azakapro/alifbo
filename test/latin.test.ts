@@ -76,6 +76,15 @@ describe('Latin conversion properties', () => {
 });
 
 describe('normalization and confusables', () => {
+  it.each(['ʻ', 'ʼ', "'", '‘', '’', '`', '´', '′', '＇'])(
+    'normalizes uppercase context for apostrophe variant %s',
+    (apostrophe) => {
+      expect(toNewLatin(`O${apostrophe}`).text).toBe('Ö');
+      expect(toNewLatin(`G${apostrophe}`).text).toBe('Ğ');
+      expect(toNewLatin(`A${apostrophe}A`).text).toBe('AʼA');
+    },
+  );
+
   it('folds comma-below s and never emits it', () => {
     expect(normalizeConfusables('ș Ș')).toBe('ş Ş');
     expect(toNewLatin('ș Ș sh').text).not.toMatch(/[șȘ]/u);
@@ -90,6 +99,22 @@ describe('normalization and confusables', () => {
     const nfd = nfc.normalize('NFD');
     expect(toNewLatin(nfd).text).toBe(toNewLatin(nfc).text);
     expect(toNewLatin(nfd).text).toBe(toNewLatin(nfd).text.normalize('NFC'));
+  });
+
+  it('restores deliberately protected text byte-for-byte', () => {
+    const protectedNfd = 'CaféSh';
+    expect(toNewLatin(`${protectedNfd} sh`, { protectedTerms: [protectedNfd] }).text).toBe(
+      `${protectedNfd} ş`,
+    );
+  });
+
+  it('handles the s-tutuq-h boundary in every case form', () => {
+    expect(toNewLatin('asʼhob Asʼhob ASʼHOB').text).toBe('asʼhob Asʼhob ASʼHOB');
+  });
+
+  it('keeps ng text stable in either configured mode', () => {
+    expect(toNewLatin('tong Tong TONG', { ngAsDigraph: true }).text).toBe('tong Tong TONG');
+    expect(toNewLatin('tong Tong TONG', { ngAsDigraph: false }).text).toBe('tong Tong TONG');
   });
 });
 

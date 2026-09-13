@@ -28,6 +28,7 @@ if (arguments_[0] !== 'convert') usage(2);
 const toIndex = arguments_.indexOf('--to');
 const target = arguments_[toIndex + 1];
 if (toIndex < 0 || target === undefined) usage(2);
+if (target !== 'new-latin' && target !== 'old-latin' && target !== 'cyrillic') usage(2);
 const file = arguments_.find(
   (argument, index) =>
     index > 0 && index !== toIndex && index !== toIndex + 1 && !argument.startsWith('-'),
@@ -40,8 +41,7 @@ if (target === 'new-latin' || target === 'old-latin') {
   const converted =
     target === 'new-latin' ? toNewLatin(intermediate.text) : toOldLatin(intermediate.text);
   result = { text: converted.text, warnings: [...intermediate.warnings, ...converted.warnings] };
-} else if (target === 'cyrillic') result = toCyrillic(input);
-else usage(2);
+} else result = toCyrillic(input);
 
 process.stdout.write(result.text);
 for (const item of result.warnings) printWarning(item);
