@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import unicodedata
 from collections import Counter
 from pathlib import Path
 from typing import Any, Callable, Dict, List
@@ -107,26 +106,18 @@ def test_parity(case: Dict[str, Any]) -> None:
     assert public.text == expected["text"]
     assert len(public.warnings) == len(internal.warnings)
     for got, reference in zip(public.warnings, internal.warnings):
-        assert (got.length, got.rule, got.message, got.alternatives) == (
-            reference.length,
+        assert (got.rule, got.message, got.alternatives) == (
             reference.rule,
             reference.message,
             reference.alternatives,
         )
 
-    if all(ord(character) <= 0xFFFF for character in text):
-        assert [warning.index for warning in public.warnings] == [
-            warning.index for warning in internal.warnings
-        ]
-        return
-
-    # Astral input: when no length-changing normalization or exception precedes the
-    # warnings, offsets address the source text directly and can be mapped exactly.
-    basis = alifbo.to_new_latin(text, **options).text if fn == "toCyrillic" else text
-    if fn == "fromCyrillic" and (
-        unicodedata.normalize("NFC", text) != text or "exceptions" in options
-    ):
-        return
-    assert [warning.index for warning in public.warnings] == [
-        utf16_to_code_points(basis, warning.index) for warning in internal.warnings
+    # Offsets point into the caller's text in both modes, so UTF-16 ranges map exactly
+    # onto Python string ranges (identically for text inside the Basic Multilingual Plane).
+    assert [(warning.index, warning.index + warning.length) for warning in public.warnings] == [
+        (
+            utf16_to_code_points(text, warning.index),
+            utf16_to_code_points(text, warning.index + warning.length),
+        )
+        for warning in internal.warnings
     ]

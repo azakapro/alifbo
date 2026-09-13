@@ -67,7 +67,7 @@ The other functions take only `text`:
 
 ## Differences from the TypeScript package
 
-- **Warning offsets are Python string indexes (code points).** The TypeScript package reports UTF-16 code-unit offsets. The two are equal unless the text contains characters outside the Basic Multilingual Plane, such as emoji. For example, `from_cyrillic("😀 Елена")` reports warnings at indexes `[2, 4]` in Python and `[3, 5]` in JavaScript. Offsets refer to the NFC-normalized text after exceptions are applied, just as they do in TypeScript.
+- **Warning offsets are Python string indexes (code points).** The TypeScript package reports UTF-16 code-unit offsets. The two are equal unless the text contains characters outside the Basic Multilingual Plane, such as emoji. For example, `from_cyrillic("😀 Елена")` reports warnings at indexes `[2, 4]` in Python and `[3, 5]` in JavaScript. Offsets point into the text you passed in, before NFC normalization, exceptions, or (for `to_cyrillic`) the old-to-new Latin pre-pass, just as they do in TypeScript.
 - Names are snake_case, options are keyword arguments, and results are immutable dataclasses with tuples instead of arrays.
 - An empty string used as an `exceptions` key is ignored. The TypeScript package can loop forever on one.
 - Unicode character properties come from the running Python's `unicodedata` module. Characters added in newer Unicode versions may be classified differently than they are by your JavaScript engine.

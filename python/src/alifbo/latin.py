@@ -5,8 +5,15 @@ from __future__ import annotations
 from typing import Iterable, List, Mapping, Optional, Tuple
 
 from .case import first_case, is_upper, lower_char, upper_text
-from .normalize import nfc, prepare_text
-from .pipeline import DEFAULT_OPTIONS, Options, apply_exceptions, make_options, map_segments
+from .normalize import MappedText, nfc, prepare_text_mapped, text_units, unit_length
+from .pipeline import (
+    DEFAULT_OPTIONS,
+    Options,
+    apply_exceptions,
+    make_options,
+    map_segments,
+    map_segments_mapped,
+)
 from .types import ConversionResult, Warning
 
 # TODO(ng): Change only this value if the authoritative law assigns a new single letter.
@@ -21,10 +28,29 @@ def _is_pair_at(text: str, index: int, first: str, second: str) -> bool:
     )
 
 
-def old_latin_core(text: str, options: Options = DEFAULT_OPTIONS) -> str:
-    source = apply_exceptions(prepare_text(text), options)
+def old_latin_core_mapped(
+    text: str, options: Options = DEFAULT_OPTIONS, offset: int = 0
+) -> MappedText:
+    """Previous Latin to new Latin, recording the source offset of every output unit."""
+    utf16 = options.utf16_offsets
+    source, origins = apply_exceptions(prepare_text_mapped(text, utf16), options)
     length = len(source)
+    # Offset-unit position of every source character, plus the end.
+    positions: List[int] = []
+    units = 0
+    for character in source:
+        positions.append(units)
+        units += unit_length(character, utf16)
+    positions.append(units)
     output: List[str] = []
+    output_origins: List[int] = []
+
+    def emit(piece: str, source_index: int) -> None:
+        output.append(piece)
+        output_origins.extend(
+            [offset + origins[positions[source_index]]] * text_units(piece, utf16)
+        )
+
     index = 0
     while index < length:
         character = source[index]
@@ -32,7 +58,7 @@ def old_latin_core(text: str, options: Options = DEFAULT_OPTIONS) -> str:
         next_character = source[index + 1] if index + 1 < length else None
 
         if (lower == "o" or lower == "g") and next_character == "ʻ":
-            output.append(first_case(character, "ö" if lower == "o" else "ğ"))
+            emit(first_case(character, "ö" if lower == "o" else "ğ"), index)
             index += 2
             continue
         if (
@@ -41,46 +67,76 @@ def old_latin_core(text: str, options: Options = DEFAULT_OPTIONS) -> str:
             and index + 2 < length
             and lower_char(source[index + 2]) == "h"
         ):
-            output.append(source[index : index + 3])
+            emit(character, index)
+            emit(source[index + 1], index + 1)
+            emit(source[index + 2], index + 2)
             index += 3
             continue
         if _is_pair_at(source, index, "s", "h"):
-            output.append(first_case(character, "ş"))
+            emit(first_case(character, "ş"), index)
             index += 2
             continue
         if _is_pair_at(source, index, "c", "h"):
-            output.append(first_case(character, "ç"))
+            emit(first_case(character, "ç"), index)
             index += 2
             continue
         if options.ng_as_digraph and _is_pair_at(source, index, "n", "g"):
-            output.append(
-                source[index : index + 2]
-                if NG_DIGRAPH_OUTPUT == "ng"
-                else first_case(character, NG_DIGRAPH_OUTPUT)
-            )
+            if NG_DIGRAPH_OUTPUT == "ng":
+                emit(source[index], index)
+                emit(source[index + 1], index + 1)
+            else:
+                emit(first_case(character, NG_DIGRAPH_OUTPUT), index)
             index += 2
             continue
-        output.append(character)
+        emit(character, index)
         index += 1
-    return nfc("".join(output))
+    output_origins.append(offset + origins[positions[length]])
+
+    joined = "".join(output)
+    normalized = nfc(joined)
+    normalized_units = text_units(normalized, utf16)
+    if normalized_units != text_units(joined, utf16):
+        end = output_origins[-1]
+        return MappedText(
+            normalized,
+            [
+                min(output_origins[unit] if unit < len(output_origins) else end, end)
+                for unit in range(normalized_units + 1)
+            ],
+        )
+    return MappedText(normalized, output_origins)
+
+
+def old_latin_core(text: str, options: Options = DEFAULT_OPTIONS) -> str:
+    return old_latin_core_mapped(text, options).text
 
 
 _NEW_TO_OLD = {"ö": "oʻ", "ğ": "gʻ", "ş": "sh", "ç": "ch"}
 
 
 def _new_latin_core(text: str, options: Options) -> str:
-    source = apply_exceptions(prepare_text(text), options)
+    source = apply_exceptions(prepare_text_mapped(text, options.utf16_offsets), options).text
     length = len(source)
     output: List[str] = []
     for index, character in enumerate(source):
         replacement = _NEW_TO_OLD.get(lower_char(character))
         if replacement is None:
             output.append(character)
-        elif is_upper(character) and index + 1 < length and is_upper(source[index + 1]):
+        elif is_upper(character) and (
+            (index + 1 < length and is_upper(source[index + 1]))
+            or (index > 0 and is_upper(source[index - 1]))
+        ):
             output.append(upper_text(replacement))
         else:
             output.append(first_case(character, replacement))
     return nfc("".join(output))
+
+
+def to_new_latin_mapped(text: str, options: Options) -> MappedText:
+    """Previous Latin to new Latin across protected spans, with offsets into ``text``."""
+    return map_segments_mapped(
+        text, options, lambda segment, start: old_latin_core_mapped(segment, options, start)
+    )
 
 
 def _to_new_latin(text: str, options: Options) -> ConversionResult:

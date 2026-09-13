@@ -2,19 +2,13 @@
 
 from __future__ import annotations
 
+import unicodedata
 from typing import Iterable, List, Mapping, Optional, Sequence, Tuple
 
-from .case import first_case, lower_char
-from .latin import _to_new_latin, old_latin_core
-from .normalize import nfc, prepare_text
-from .pipeline import (
-    Options,
-    apply_exceptions,
-    is_bmp_letter,
-    make_options,
-    map_segments,
-    unit_length,
-)
+from .case import first_case, is_upper, lower_char, upper_text
+from .latin import old_latin_core, to_new_latin_mapped
+from .normalize import nfc, prepare_text_mapped, source_range, unit_length
+from .pipeline import Options, apply_exceptions, make_options, map_segments
 from .types import ConversionResult, Warning
 
 _DIRECT_FROM_CYRILLIC = {
@@ -80,6 +74,7 @@ _DIRECT_TO_CYRILLIC = {
 }
 
 _CYRILLIC_VOWELS = frozenset(("а", "е", "ё", "и", "о", "у", "ў", "э", "ю", "я"))
+_LATIN_VOWELS = frozenset(("a", "e", "i", "o", "u", "ö"))
 _IOTATED = {"ё": "yo", "ю": "yu", "я": "ya"}
 _IOTATED_REVERSE = {"yo": "ё", "yu": "ю", "ya": "я"}
 
@@ -90,16 +85,41 @@ def _warning(
     return Warning(index, length, rule, message, tuple(alternatives))
 
 
+def _to_source_offsets(warnings: List[Warning], origins: List[int], offset: int) -> List[Warning]:
+    """Rewrite warning ranges from prepared-text offsets to offsets in the caller's text."""
+    mapped: List[Warning] = []
+    for item in warnings:
+        index, length = source_range(origins, item.index, item.length)
+        mapped.append(Warning(offset + index, length, item.rule, item.message, item.alternatives))
+    return mapped
+
+
+def _letter_at(source: str, index: int) -> str:
+    """The lowercased letter at ``index`` for positional rules, or '' when it is not a letter."""
+    character = source[index]
+    return lower_char(character) if unicodedata.category(character)[0] == "L" else ""
+
+
+def _case_replacement(source: str, index: int, lower: str) -> str:
+    """Case a multi-letter replacement: all caps inside an uppercase word, else title case."""
+    character = source[index]
+    if not is_upper(character):
+        return lower
+    in_uppercase_word = (index + 1 < len(source) and is_upper(source[index + 1])) or (
+        index > 0 and is_upper(source[index - 1])
+    )
+    return upper_text(lower) if in_uppercase_word else first_case(character, lower)
+
+
 def _from_cyrillic_core(text: str, offset: int, options: Options) -> Tuple[str, List[Warning]]:
-    source = apply_exceptions(prepare_text(text), options)
+    source, origins = apply_exceptions(prepare_text_mapped(text, options.utf16_offsets), options)
     output: List[str] = []
     warnings: List[Warning] = []
     previous_letter = ""
-    position = offset
+    position = 0
 
-    for character in source:
+    for index, character in enumerate(source):
         lower = lower_char(character)
-        uppercase = character != lower
         replacement: Optional[str]
 
         if lower == "е":
@@ -173,16 +193,13 @@ def _from_cyrillic_core(text: str, offset: int, options: Options) -> Tuple[str, 
         else:
             replacement = _DIRECT_FROM_CYRILLIC.get(lower)
 
-        if replacement is None:
-            output.append(character)
-        elif uppercase:
-            output.append(first_case(character, replacement))
-        else:
-            output.append(replacement)
-        # JavaScript tests one UTF-16 code unit here, so astral letters never count.
-        previous_letter = lower if is_bmp_letter(character) else ""
+        output.append(
+            character if replacement is None else _case_replacement(source, index, replacement)
+        )
+        previous_letter = _letter_at(source, index)
         position += unit_length(character, options.utf16_offsets)
 
+    warnings = _to_source_offsets(warnings, origins, offset)
     return nfc(old_latin_core("".join(output), options)), warnings
 
 
@@ -194,17 +211,21 @@ def _from_cyrillic(text: str, options: Options) -> ConversionResult:
 
 
 def _to_cyrillic_core(text: str, offset: int, options: Options) -> Tuple[str, List[Warning]]:
-    source = prepare_text(text)
+    source, origins = prepare_text_mapped(text, options.utf16_offsets)
     length = len(source)
     output: List[str] = []
     warnings: List[Warning] = []
     index = 0
-    position = offset
+    position = 0
     while index < length:
         character = source[index]
         lower = lower_char(character)
         uppercase = character != lower
         pair = lower + (lower_char(source[index + 1]) if index + 1 < length else "")
+        # Inverse of the fromCyrillic е rule: Cyrillic е is read "ye" at a word start, after
+        # a vowel, or after ъ/ь, so there "ye" maps back to е and a bare "e" must be э.
+        previous = _letter_at(source, index - 1) if index > 0 else ""
+        positional = previous == "" or previous == "ʼ" or previous in _LATIN_VOWELS
         replacement: Optional[str]
         consumed = 1
 
@@ -244,14 +265,27 @@ def _to_cyrillic_core(text: str, offset: int, options: Options) -> Tuple[str, Li
                     2,
                 )
             )
-        elif lower == "e":
+        elif pair == "ye" and positional:
             replacement = "е"
+            consumed = 2
+            warnings.append(
+                _warning(
+                    position,
+                    "latin.ye.positional",
+                    "ye at a word start, after a vowel, or after tutuq was interpreted as "
+                    "Cyrillic е.",
+                    ("е", "йе"),
+                    2,
+                )
+            )
+        elif lower == "e":
+            replacement = "э" if positional else "е"
             warnings.append(
                 _warning(
                     position,
                     "latin.e.ambiguous",
-                    "Latin e can correspond to Cyrillic е or э; е was chosen.",
-                    ("е", "э"),
+                    f"Latin e can correspond to Cyrillic е or э; {replacement} was chosen.",
+                    ("э", "е") if positional else ("е", "э"),
                 )
             )
         elif character == "ʼ":
@@ -286,15 +320,18 @@ def _to_cyrillic_core(text: str, offset: int, options: Options) -> Tuple[str, Li
         # A two-character match only ever consumes Basic Multilingual Plane letters.
         position += consumed if consumed == 2 else unit_length(character, options.utf16_offsets)
         index += consumed
-    return nfc("".join(output)), warnings
+    return nfc("".join(output)), _to_source_offsets(warnings, origins, offset)
 
 
 def _to_cyrillic(text: str, options: Options) -> ConversionResult:
-    canonical = _to_new_latin(text, options).text
+    canonical = to_new_latin_mapped(text, options)
     converted, warnings = map_segments(
-        canonical, options, lambda segment, start: _to_cyrillic_core(segment, start, options)
+        canonical.text,
+        options,
+        lambda segment, start: _to_cyrillic_core(segment, start, options),
     )
-    return ConversionResult(converted, tuple(warnings))
+    # Warnings point into the new-Latin intermediate; report them against the caller's text.
+    return ConversionResult(converted, tuple(_to_source_offsets(warnings, canonical.origins, 0)))
 
 
 def from_cyrillic(
