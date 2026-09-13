@@ -1,6 +1,6 @@
 {
   "name": "alifbo",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Uzbek transliteration between Cyrillic, old Latin, and the 2026 Latin alphabet",
   "keywords": [
     "uzbek",
@@ -65,6 +65,7 @@
     "@types/node": "^26.5.1",
     "esbuild": "^0.28.2",
     "eslint": "^10.10.0",
+    "fflate": "0.8.3",
     "prettier": "^3.6.2",
     "tsup": "^8.5.0",
     "tsx": "^4.23.13",

@@ -10,8 +10,8 @@ await mkdir(outdir, { recursive: true });
 
 await build({
   absWorkingDir: projectRoot,
-  entryPoints: ['site/app.ts'],
-  outfile: '_site/app.js',
+  entryPoints: ['site/app.ts', 'site/worker.ts'],
+  outdir: '_site',
   bundle: true,
   minify: true,
   format: 'esm',

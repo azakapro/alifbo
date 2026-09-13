@@ -1,16 +1,17 @@
+import type { ConversionOptions } from '../src/index.js';
+import { readDocx, type DocxDocument } from './docx.js';
 import {
-  detectAlphabet,
-  fromCyrillic,
-  toCyrillic,
-  toNewLatin,
-  toOldLatin,
-  type ConversionOptions,
-  type Warning,
-} from '../src/index.js';
+  run,
+  runDocx,
+  WORDS_PER_GROUP,
+  type ConvertResponse,
+  type Source,
+  type Target,
+} from './engine.js';
+import type { WorkerRequest } from './worker.js';
 
-type Lang = 'uz' | 'en';
-type Source = 'cyrillic' | 'old-latin' | 'new-latin';
-type Target = Source;
+type Lang = 'uz' | 'en' | 'ru';
+const LANGS: readonly Lang[] = ['uz', 'en', 'ru'];
 
 const STRINGS = {
   uz: {
@@ -34,7 +35,16 @@ const STRINGS = {
     download: 'Yuklab olish',
     tryExample: 'Misol:',
     privacy: 'Matn brauzeringizdan chiqmaydi.',
-    placeholder: 'Matnni shu yerga yozing yoki joylashtiring…',
+    working: 'Oʻgirilmoqda…',
+    formats:
+      'Fayllar: .docx (Word), .txt, .md, .csv, .srt. PDF va eski .doc ochilmaydi, avval Word’da .docx qilib saqlang.',
+    fileNote: 'Formatlash saqlanadi. Natijani .docx qilib yuklab oling.',
+    closeFile: 'Yopish',
+    downloadDocx: 'Yuklab olish (.docx)',
+    unsupported: 'Bu fayl turi qoʻllab-quvvatlanmaydi.',
+    badDocx:
+      'Word faylni ochib boʻlmadi. U buzilgan yoki parol bilan himoyalangan boʻlishi mumkin.',
+    placeholder: 'Matnni yozing, joylashtiring yoki faylni shu yerga tashlang…',
     chars: 'belgi',
     options: 'Sozlamalar',
     protectSpans: 'Havolalar, email manzillar va `kod` qismlarini oʻzgartirmaslik',
@@ -70,7 +80,15 @@ const STRINGS = {
     download: 'Download',
     tryExample: 'Try:',
     privacy: 'Your text never leaves your browser.',
-    placeholder: 'Type or paste Uzbek text here…',
+    working: 'Converting…',
+    formats:
+      'Files: .docx (Word), .txt, .md, .csv, .srt. PDF and old .doc files aren’t supported; save them as .docx in Word first.',
+    fileNote: 'Formatting is kept. Download the result as .docx.',
+    closeFile: 'Close',
+    downloadDocx: 'Download .docx',
+    unsupported: 'This file type isn’t supported.',
+    badDocx: 'Couldn’t open this Word file. It may be damaged or password-protected.',
+    placeholder: 'Type or paste Uzbek text, or drop a file here…',
     chars: 'chars',
     options: 'Options',
     protectSpans: 'Leave links, email addresses and `code` unchanged',
@@ -84,6 +102,50 @@ const STRINGS = {
     report: 'Report a problem',
     legal:
       'Uzbekistan’s Senate approved the new alphabet law on 10 September 2026. Rules will be updated once the official text is published on lex.uz. Always proofread important documents.',
+  },
+  ru: {
+    title: 'Переводите узбекский текст на новый латинский алфавит',
+    subtitle:
+      'Между кириллицей, действующей латиницей и новой латиницей 2026 года. Спорные места отмечаются для проверки.',
+    from: 'Исходный алфавит',
+    to: 'Перевести в',
+    auto: 'Определить автоматически',
+    cyrillic: 'Кириллица',
+    oldLatin: 'Действующая латиница (oʻ, gʻ, sh, ch)',
+    newLatin: 'Новая латиница (ö, ğ, ş, ç)',
+    swap: 'Поменять местами',
+    detected: 'Определено: ',
+    input: 'Текст',
+    output: 'Результат',
+    openFile: 'Открыть файл',
+    clear: 'Очистить',
+    copy: 'Копировать',
+    copied: 'Скопировано ✓',
+    download: 'Скачать',
+    tryExample: 'Пример:',
+    privacy: 'Текст не покидает ваш браузер.',
+    working: 'Конвертация…',
+    formats:
+      'Файлы: .docx (Word), .txt, .md, .csv, .srt. PDF и старые .doc не поддерживаются — сначала сохраните их в Word как .docx.',
+    fileNote: 'Форматирование сохраняется. Скачайте результат в формате .docx.',
+    closeFile: 'Закрыть',
+    downloadDocx: 'Скачать .docx',
+    unsupported: 'Этот тип файла не поддерживается.',
+    badDocx: 'Не удалось открыть файл Word. Возможно, он повреждён или защищён паролем.',
+    placeholder: 'Введите или вставьте узбекский текст либо перетащите файл сюда…',
+    chars: 'симв.',
+    options: 'Настройки',
+    protectSpans: 'Не изменять ссылки, адреса email и `код`',
+    protectedTerms: 'Слова, которые не нужно менять (через запятую):',
+    review: 'Проверьте',
+    reviewEmpty: 'Спорных мест не найдено.',
+    alternatives: 'Варианты: ',
+    devTitle: 'Для разработчиков',
+    devText:
+      'Страница работает на открытой библиотеке alifbo: TypeScript без зависимостей, для Node и браузера.',
+    report: 'Сообщить об ошибке',
+    legal:
+      'Сенат Узбекистана одобрил закон о новом алфавите 10 сентября 2026 года. Правила обновятся после публикации официального текста на lex.uz. Всегда проверяйте важные документы.',
   },
 } as const;
 
@@ -125,6 +187,23 @@ const RULES: Record<Lang, Record<string, string>> = {
     'latin.tutuq.ambiguous': 'The tutuq sign was read as ъ; it could be ь or nothing.',
     'latin.c.ambiguous': 'A standalone c was read as Cyrillic ц.',
   },
+  ru: {
+    'cyrillic.e.positional':
+      'е записана как «ye» в начале слова и после гласной, в остальных случаях как «e». Особенно проверьте заимствованные слова.',
+    'cyrillic.tse.positional': 'ц записана как «s» в начале слова и как «ts» в остальных случаях.',
+    'cyrillic.shcha.ambiguous': 'У щ нет точного соответствия в новой латинице; выбрано «şç».',
+    'cyrillic.hard-sign.ambiguous': 'Твёрдый знак ъ записан как знак тутук ʼ.',
+    'cyrillic.soft-sign.ambiguous': 'Мягкий знак ь опущен.',
+    'cyrillic.compound': 'ё, ю и я записаны двумя буквами (yo, yu, ya).',
+    'latin.e.ambiguous':
+      'Латинская e записана как э в начале слова и после гласной, в остальных случаях как е. Особенно проверьте заимствованные слова.',
+    'latin.ye.positional': '«ye» в начале слова, после гласной или знака тутук записано как е.',
+    'latin.tse.ambiguous': '«ts» прочитано как ц, но это может быть тс.',
+    'latin.shcha.ambiguous': '«şç» прочитано как щ, но это может быть шч.',
+    'latin.iotated': '«yo», «yu» и «ya» прочитаны как одна буква (ё, ю, я).',
+    'latin.tutuq.ambiguous': 'Знак тутук прочитан как ъ; это может быть ь или ничего.',
+    'latin.c.ambiguous': 'Отдельная c прочитана как ц.',
+  },
 };
 
 const EXAMPLES: Record<string, string> = {
@@ -133,20 +212,45 @@ const EXAMPLES: Record<string, string> = {
   tutuq: 'Isʼhoq va asʼhob soʻzlaridagi tutuq belgisi saqlanadi.',
 };
 
+// Inputs above this size wait for a pause in typing before converting.
+const LARGE_INPUT = 100_000;
+// Show the busy indicator only when a conversion is noticeably slow.
+const BUSY_DELAY_MS = 150;
+const TEXT_EXTENSIONS = ['.txt', '.md', '.csv', '.srt'];
+const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+type Response = ConvertResponse & { bytes?: Uint8Array };
+type WorkerMessage =
+  | ({ type: 'result' } & Response)
+  | { type: 'docx-loaded'; id: number; text: string }
+  | { type: 'error'; id: number; message: string };
+
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = $<HTMLTextAreaElement>('input');
 const output = $<HTMLTextAreaElement>('output');
 const fromSelect = $<HTMLSelectElement>('from');
 const toSelect = $<HTMLSelectElement>('to');
 const detected = $('detected');
+const status = $('status');
+const notice = $('notice');
+const fileBanner = $('fileBanner');
+const swapButton = $<HTMLButtonElement>('swap');
+const downloadButton = $<HTMLButtonElement>('download');
 const protectSpans = $<HTMLInputElement>('protectSpans');
 const protectedTerms = $<HTMLInputElement>('protectedTerms');
 const reviewList = $('reviewList');
 const reviewEmpty = $('reviewEmpty');
 const reviewCount = $('reviewCount');
 
-let lang: Lang = readStored('alifbo.lang') === 'en' ? 'en' : 'uz';
-let lastWarnings: { warnings: Warning[]; basis: string } = { warnings: [], basis: '' };
+let lang: Lang = initialLanguage();
+let latest: Response | undefined;
+let requestId = 0;
+let debounce = 0;
+let busyTimer = 0;
+/** Set while a Word document is open; conversion then rewrites the document itself. */
+let docx: { name: string; pendingId: number; loaded: boolean } | undefined;
+/** Main-thread copy of the document, used only when workers are unavailable. */
+let localDoc: DocxDocument | undefined;
 
 function readStored(key: string): string | null {
   try {
@@ -162,6 +266,13 @@ function store(key: string, value: string): void {
   } catch {
     // Storage can be unavailable (private mode); preferences are optional.
   }
+}
+
+function initialLanguage(): Lang {
+  const saved = readStored('alifbo.lang');
+  if (saved && (LANGS as readonly string[]).includes(saved)) return saved as Lang;
+  const browser = (navigator.language || '').slice(0, 2);
+  return browser === 'ru' ? 'ru' : browser === 'en' ? 'en' : 'uz';
 }
 
 function t(key: Key): string {
@@ -180,7 +291,9 @@ function applyLanguage(): void {
     button.setAttribute('aria-pressed', String(button.dataset.lang === lang));
   }
   input.placeholder = t('placeholder');
-  update();
+  downloadButton.textContent = docx ? t('downloadDocx') : t('download');
+  if (notice.dataset.key) notice.textContent = t(notice.dataset.key as Key);
+  if (latest) render(latest);
 }
 
 function options(): ConversionOptions {
@@ -191,130 +304,182 @@ function options(): ConversionOptions {
   return { protectSpans: protectSpans.checked, protectedTerms: terms };
 }
 
-function resolveSource(text: string): Source {
-  const choice = fromSelect.value;
-  if (choice !== 'auto') return choice as Source;
-  const { alphabet } = detectAlphabet(text);
-  if (alphabet === 'cyrillic' || (alphabet === 'mixed' && /[А-яЁёЎўҚқҒғҲҳ]/u.test(text))) {
-    return 'cyrillic';
-  }
-  return alphabet === 'new-latin' ? 'new-latin' : 'old-latin';
+function showNotice(key: Key | undefined): void {
+  notice.dataset.key = key ?? '';
+  notice.textContent = key ? t(key) : '';
+  notice.hidden = key === undefined;
 }
 
-/** Run a conversion. `basis` is the text that warning offsets point into. */
-function convert(
-  text: string,
-  from: Source,
-  to: Target,
-  opts: ConversionOptions,
-): { text: string; warnings: Warning[]; basis: string } {
-  if (from === 'cyrillic') {
-    if (to === 'cyrillic') return { text, warnings: [], basis: text };
-    const latin = fromCyrillic(text, opts);
-    const result = to === 'old-latin' ? toOldLatin(latin.text, opts).text : latin.text;
-    return { text: result, warnings: latin.warnings, basis: text };
+// Conversion runs in a worker so long documents never freeze typing or scrolling. If workers
+// are unavailable (very old browsers), fall back to converting on the main thread.
+let worker: Worker | undefined;
+try {
+  worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+  worker.addEventListener('message', (event: MessageEvent<WorkerMessage>) => {
+    const message = event.data;
+    if (message.type === 'result') receive(message);
+    else if (message.type === 'docx-loaded') docxLoaded(message.id, message.text);
+    else failed(message.id);
+  });
+  worker.addEventListener('error', () => {
+    worker = undefined;
+    if (docx) closeDocx();
+    update();
+  });
+} catch {
+  worker = undefined;
+}
+
+function send(request: WorkerRequest, transfer: Transferable[] = []): void {
+  if (worker) {
+    worker.postMessage(request, transfer);
+    return;
   }
-  const newLatin = from === 'old-latin' ? toNewLatin(text, opts) : { text, warnings: [] };
-  if (to === 'new-latin')
-    return { text: toNewLatin(newLatin.text, opts).text, warnings: [], basis: text };
-  if (to === 'old-latin')
-    return { text: toOldLatin(newLatin.text, opts).text, warnings: [], basis: text };
-  // toCyrillic accepts old or new Latin and reports offsets into the text it was given.
-  const cyrillic = toCyrillic(text, opts);
-  return { text: cyrillic.text, warnings: cyrillic.warnings, basis: text };
+  try {
+    if (request.type === 'text') receive(run(request));
+    else if (request.type === 'docx-load') {
+      localDoc = readDocx(request.buffer);
+      docxLoaded(request.id, localDoc.text);
+    } else if (request.type === 'docx' && localDoc) receive(runDocx(localDoc, request));
+    else if (request.type === 'docx-close') localDoc = undefined;
+  } catch {
+    failed('id' in request ? request.id : 0);
+  }
 }
 
 function update(): void {
-  const text = input.value;
-  const from = resolveSource(text);
-  const to = toSelect.value as Target;
-  const result = convert(text, from, to, options());
-
-  output.value = result.text;
-  $('inCount').textContent = text ? `${[...text].length} ${t('chars')}` : '';
-  $('outCount').textContent = result.text ? `${[...result.text].length} ${t('chars')}` : '';
-  detected.textContent =
-    fromSelect.value === 'auto' && text.trim()
-      ? t('detected') +
-        t(from === 'cyrillic' ? 'cyrillic' : from === 'new-latin' ? 'newLatin' : 'oldLatin')
-      : '';
-  lastWarnings = result;
-  renderReview();
-}
-
-function ruleKey(rule: string): string {
-  if (/^cyrillic\.(yo|yu|ya)\.compound$/.test(rule)) return 'cyrillic.compound';
-  if (/^latin\.(yo|yu|ya)\.ambiguous$/.test(rule)) return 'latin.iotated';
-  return rule;
-}
-
-const WORD_CHAR = /[\p{L}\p{M}\p{N}ʻʼ'‘’`-]/u;
-
-function wordAround(basis: string, index: number, length: number) {
-  let start = index;
-  let end = index + length;
-  while (start > 0 && WORD_CHAR.test(basis[start - 1]!)) start--;
-  while (end < basis.length && WORD_CHAR.test(basis[end]!)) end++;
-  return {
-    before: basis.slice(start, index),
-    hit: basis.slice(index, index + length),
-    after: basis.slice(index + length, end),
+  clearTimeout(debounce);
+  if (docx && !docx.loaded) return;
+  requestId += 1;
+  const base = {
+    id: requestId,
+    from: fromSelect.value as Source | 'auto',
+    to: toSelect.value as Target,
+    options: options(),
   };
+  clearTimeout(busyTimer);
+  busyTimer = window.setTimeout(() => {
+    status.textContent = t('working');
+    output.classList.add('stale');
+  }, BUSY_DELAY_MS);
+  send(docx ? { type: 'docx', ...base } : { type: 'text', text: input.value, ...base });
 }
 
-function renderReview(): void {
-  const { warnings, basis } = lastWarnings;
-  interface Group {
-    alternatives: string[];
-    words: Map<string, { parts: ReturnType<typeof wordAround>; count: number }>;
-  }
-  const groups = new Map<string, Group>();
+function scheduleUpdate(): void {
+  clearTimeout(debounce);
+  debounce = window.setTimeout(update, input.value.length > LARGE_INPUT ? 300 : 0);
+}
 
-  for (const warning of warnings) {
-    const key = ruleKey(warning.rule);
-    const group: Group = groups.get(key) ?? { alternatives: [], words: new Map() };
-    for (const alternative of warning.alternatives ?? []) {
-      if (!group.alternatives.includes(alternative)) group.alternatives.push(alternative);
-    }
-    const parts = wordAround(basis, warning.index, warning.length);
-    const id = `${parts.before} ${parts.hit} ${parts.after}`;
-    const existing = group.words.get(id);
-    if (existing) existing.count++;
-    else group.words.set(id, { parts, count: 1 });
-    groups.set(key, group);
+function receive(response: Response): void {
+  // A newer request is already on its way; drop this stale result.
+  if (response.id !== requestId) return;
+  clearTimeout(busyTimer);
+  status.textContent = '';
+  output.classList.remove('stale');
+  latest = response;
+  if (output.value !== response.text) output.value = response.text;
+  render(response);
+}
+
+function failed(id: number): void {
+  clearTimeout(busyTimer);
+  status.textContent = '';
+  output.classList.remove('stale');
+  if (docx && id === docx.pendingId) {
+    closeDocx();
+    showNotice('badDocx');
   }
+}
+
+async function openFile(file: File): Promise<void> {
+  showNotice(undefined);
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.docx') || file.type === DOCX_TYPE) {
+    requestId += 1;
+    docx = { name: file.name, pendingId: requestId, loaded: false };
+    const buffer = await file.arrayBuffer();
+    send({ type: 'docx-load', id: docx.pendingId, buffer }, [buffer]);
+    return;
+  }
+  if (
+    TEXT_EXTENSIONS.some((extension) => name.endsWith(extension)) ||
+    file.type.startsWith('text/')
+  ) {
+    if (docx) closeDocx();
+    input.value = await file.text();
+    update();
+    return;
+  }
+  showNotice('unsupported');
+}
+
+function docxLoaded(id: number, text: string): void {
+  if (!docx || id !== docx.pendingId) return;
+  docx.loaded = true;
+  input.value = text;
+  input.readOnly = true;
+  swapButton.disabled = true;
+  $('fileName').textContent = docx.name;
+  fileBanner.hidden = false;
+  downloadButton.textContent = t('downloadDocx');
+  update();
+}
+
+function closeDocx(): void {
+  if (!docx) return;
+  docx = undefined;
+  send({ type: 'docx-close' });
+  input.readOnly = false;
+  swapButton.disabled = false;
+  fileBanner.hidden = true;
+  downloadButton.textContent = t('download');
+  input.value = '';
+}
+
+function render(response: Response): void {
+  $('inCount').textContent = response.inputChars
+    ? `${response.inputChars.toLocaleString()} ${t('chars')}`
+    : '';
+  $('outCount').textContent = response.outputChars
+    ? `${response.outputChars.toLocaleString()} ${t('chars')}`
+    : '';
+  const source = response.source;
+  detected.textContent =
+    fromSelect.value === 'auto' && response.inputChars > 0
+      ? t('detected') +
+        t(source === 'cyrillic' ? 'cyrillic' : source === 'new-latin' ? 'newLatin' : 'oldLatin')
+      : '';
 
   reviewList.replaceChildren();
-  reviewEmpty.hidden = warnings.length > 0 || !input.value.trim();
-  reviewCount.textContent = warnings.length ? String(warnings.length) : '';
+  reviewEmpty.hidden = response.warningCount > 0 || response.inputChars === 0;
+  reviewCount.textContent = response.warningCount ? response.warningCount.toLocaleString() : '';
 
-  for (const [key, group] of groups) {
+  for (const group of response.groups) {
     const card = document.createElement('article');
     card.className = 'group';
     const explanation = document.createElement('p');
-    explanation.textContent = RULES[lang][key] ?? warningsMessage(key);
+    explanation.textContent = RULES[lang][group.key] ?? group.message;
     card.append(explanation);
 
     const words = document.createElement('div');
     words.className = 'words';
-    const entries = [...group.words.values()].sort((a, b) => b.count - a.count);
-    for (const { parts, count } of entries.slice(0, 60)) {
+    for (const word of group.words) {
       const chip = document.createElement('span');
       chip.className = 'word';
       const mark = document.createElement('mark');
-      mark.textContent = parts.hit || '·';
-      chip.append(parts.before, mark, parts.after);
-      if (count > 1) {
+      mark.textContent = word.hit || '·';
+      chip.append(word.before, mark, word.after);
+      if (word.count > 1) {
         const small = document.createElement('small');
-        small.textContent = `×${count}`;
+        small.textContent = `×${word.count.toLocaleString()}`;
         chip.append(small);
       }
       words.append(chip);
     }
-    if (entries.length > 60) {
+    if (group.distinctWords > WORDS_PER_GROUP) {
       const more = document.createElement('span');
       more.className = 'word muted';
-      more.textContent = `+${entries.length - 60}`;
+      more.textContent = `+${(group.distinctWords - WORDS_PER_GROUP).toLocaleString()}`;
       words.append(more);
     }
     card.append(words);
@@ -330,16 +495,6 @@ function renderReview(): void {
   }
 }
 
-function warningsMessage(key: string): string {
-  return lastWarnings.warnings.find((warning) => ruleKey(warning.rule) === key)?.message ?? key;
-}
-
-function scheduleUpdate(): void {
-  cancelAnimationFrame(pending);
-  pending = requestAnimationFrame(update);
-}
-let pending = 0;
-
 input.addEventListener('input', scheduleUpdate);
 protectedTerms.addEventListener('input', scheduleUpdate);
 protectSpans.addEventListener('change', update);
@@ -349,8 +504,8 @@ toSelect.addEventListener('change', () => {
   update();
 });
 
-$('swap').addEventListener('click', () => {
-  const currentFrom = resolveSource(input.value);
+swapButton.addEventListener('click', () => {
+  const currentFrom = latest?.source ?? 'old-latin';
   const currentTo = toSelect.value;
   input.value = output.value;
   fromSelect.value = currentTo;
@@ -360,7 +515,15 @@ $('swap').addEventListener('click', () => {
 });
 
 $('clear').addEventListener('click', () => {
+  closeDocx();
+  showNotice(undefined);
   input.value = '';
+  update();
+  input.focus();
+});
+
+$('closeFile').addEventListener('click', () => {
+  closeDocx();
   update();
   input.focus();
 });
@@ -377,24 +540,53 @@ copyButton.addEventListener('click', async () => {
   setTimeout(() => (copyButton.textContent = t('copy')), 1500);
 });
 
-$('download').addEventListener('click', () => {
-  const blob = new Blob([output.value], { type: 'text/plain;charset=utf-8' });
+function save(blob: Blob, filename: string): void {
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `alifbo-${toSelect.value}.txt`;
+  link.download = filename;
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+downloadButton.addEventListener('click', () => {
+  if (docx && latest?.bytes) {
+    const base = docx.name.replace(/\.docx$/i, '');
+    save(
+      new Blob([latest.bytes as Uint8Array<ArrayBuffer>], { type: DOCX_TYPE }),
+      `${base}-${toSelect.value}.docx`,
+    );
+    return;
+  }
+  save(
+    new Blob([output.value], { type: 'text/plain;charset=utf-8' }),
+    `alifbo-${toSelect.value}.txt`,
+  );
 });
 
 $<HTMLInputElement>('file').addEventListener('change', async (event) => {
-  const file = (event.target as HTMLInputElement).files?.[0];
+  const picker = event.target as HTMLInputElement;
+  const file = picker.files?.[0];
+  picker.value = '';
+  if (file) await openFile(file);
+});
+
+input.addEventListener('dragover', (event) => {
+  event.preventDefault();
+  input.classList.add('dropping');
+});
+input.addEventListener('dragleave', () => input.classList.remove('dropping'));
+input.addEventListener('drop', async (event) => {
+  input.classList.remove('dropping');
+  const file = event.dataTransfer?.files[0];
   if (!file) return;
-  input.value = await file.text();
-  update();
+  event.preventDefault();
+  await openFile(file);
 });
 
 for (const chip of document.querySelectorAll<HTMLButtonElement>('[data-example]')) {
   chip.addEventListener('click', () => {
+    closeDocx();
+    showNotice(undefined);
     input.value = EXAMPLES[chip.dataset.example!] ?? '';
     fromSelect.value = 'auto';
     update();
@@ -403,7 +595,9 @@ for (const chip of document.querySelectorAll<HTMLButtonElement>('[data-example]'
 
 for (const button of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
   button.addEventListener('click', () => {
-    lang = button.dataset.lang === 'en' ? 'en' : 'uz';
+    lang = (LANGS as readonly string[]).includes(button.dataset.lang ?? '')
+      ? (button.dataset.lang as Lang)
+      : 'uz';
     store('alifbo.lang', lang);
     applyLanguage();
   });
@@ -416,3 +610,4 @@ if (savedTo && [...toSelect.options].some((option) => option.value === savedTo))
 }
 if (!input.value) input.value = EXAMPLES.old!;
 applyLanguage();
+update();

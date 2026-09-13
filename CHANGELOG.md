@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ### Added
 
+- Demo: open Word `.docx` files and download the converted document with its formatting, tables, headers and footers intact, plus `.srt` subtitles and drag-and-drop. Supported formats are listed on the page.
+- Demo: Russian interface.
+
+## [0.2.0] - 2026-09-13
+
+### Added
+
 - Python port in `python/` (`pip install alifbo`) with the same behavior, snake_case names, and Python string-index warning offsets. A parity fixture generated from the TypeScript build by `scripts/gen-python-parity.mjs` keeps the two in sync, and CI checks it.
 - Browser demo at https://azakapro.github.io/alifbo/, deployed from `site/` by GitHub Pages.
 - Release workflow that publishes npm and PyPI packages with trusted publishing from a version tag.
@@ -49,6 +56,7 @@ All notable changes to this project are documented here. The format follows [Kee
 - ESM, CommonJS, and TypeScript declaration builds.
 - Golden corpus, property, normalization, casing, search, CLI, and ambiguity tests.
 
-[Unreleased]: https://github.com/azakapro/alifbo/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/azakapro/alifbo/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/azakapro/alifbo/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/azakapro/alifbo/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/azakapro/alifbo/releases/tag/v0.1.0
