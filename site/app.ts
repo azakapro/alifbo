@@ -98,7 +98,10 @@ const RULES: Record<Lang, Record<string, string>> = {
     'cyrillic.hard-sign.ambiguous': 'Ayirish belgisi «ъ» tutuq belgisi «ʼ» bilan almashtirildi.',
     'cyrillic.soft-sign.ambiguous': 'Yumshatish belgisi «ь» tushirib qoldirildi.',
     'cyrillic.compound': '«ё», «ю», «я» ikki harf bilan (yo, yu, ya) yozildi.',
-    'latin.e.ambiguous': 'Lotin «e» kirillda «е» yoki «э» boʻlishi mumkin; «е» tanlandi.',
+    'latin.e.ambiguous':
+      'Lotin «e» soʻz boshida va unlidan keyin «э», boshqa joyda «е» deb yozildi. Chet soʻzlarda tekshiring.',
+    'latin.ye.positional':
+      '«ye» soʻz boshida, unlidan yoki tutuq belgisidan keyin «е» deb yozildi.',
     'latin.tse.ambiguous': '«ts» kirill «ц» deb oʻqildi, lekin «тс» boʻlishi ham mumkin.',
     'latin.shcha.ambiguous': '«şç» kirill «щ» deb oʻqildi, lekin «шч» boʻlishi ham mumkin.',
     'latin.iotated': '«yo», «yu», «ya» bitta kirill harfi (ё, ю, я) deb oʻqildi.',
@@ -113,7 +116,9 @@ const RULES: Record<Lang, Record<string, string>> = {
     'cyrillic.hard-sign.ambiguous': 'The hard sign ъ was written as the tutuq sign ʼ.',
     'cyrillic.soft-sign.ambiguous': 'The soft sign ь was dropped.',
     'cyrillic.compound': 'ё, ю and я were written as two letters (yo, yu, ya).',
-    'latin.e.ambiguous': 'Latin e can be Cyrillic е or э; е was chosen.',
+    'latin.e.ambiguous':
+      'Latin e became э at a word start or after a vowel, and е elsewhere. Check foreign words especially.',
+    'latin.ye.positional': '“ye” at a word start, after a vowel or after the tutuq sign became е.',
     'latin.tse.ambiguous': '“ts” was read as Cyrillic ц, but it could be тс.',
     'latin.shcha.ambiguous': '“şç” was read as Cyrillic щ, but it could be шч.',
     'latin.iotated': '“yo”, “yu” and “ya” were read as one Cyrillic letter (ё, ю, я).',
@@ -214,8 +219,9 @@ function convert(
     return { text: toNewLatin(newLatin.text, opts).text, warnings: [], basis: text };
   if (to === 'old-latin')
     return { text: toOldLatin(newLatin.text, opts).text, warnings: [], basis: text };
-  const cyrillic = toCyrillic(newLatin.text, opts);
-  return { text: cyrillic.text, warnings: cyrillic.warnings, basis: newLatin.text };
+  // toCyrillic accepts old or new Latin and reports offsets into the text it was given.
+  const cyrillic = toCyrillic(text, opts);
+  return { text: cyrillic.text, warnings: cyrillic.warnings, basis: text };
 }
 
 function update(): void {

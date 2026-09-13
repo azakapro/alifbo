@@ -7,6 +7,21 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Added
 
 - Python port in `python/` (`pip install alifbo`) with the same behavior, snake_case names, and Python string-index warning offsets. A parity fixture generated from the TypeScript build by `scripts/gen-python-parity.mjs` keeps the two in sync, and CI checks it.
+- Browser demo at https://azakapro.github.io/alifbo/, deployed from `site/` by GitHub Pages.
+- Release workflow that publishes npm and PyPI packages with trusted publishing from a version tag.
+- `latin.ye.positional` warning for `toCyrillic`.
+
+### Changed
+
+- `toCyrillic` inverts the positional `е` rule so Cyrillic round-trips: `ye` at a word start, after a vowel, or after tutuq becomes `е`, and a bare `e` there becomes `э` (previously `Yevropa` → `Йевропа`, `ekran` → `екран`).
+- Warning `index`/`length` now point into the caller's text instead of the internally normalized text (affects NFD input, length-changing exceptions, and old-Latin input to `toCyrillic`).
+
+### Fixed
+
+- All-uppercase words keep multi-letter replacements uppercase at word end (`QUYOŞ` → `QUYOSH`, `ЩЁТКА` → `ŞÇYOTKA`).
+- An empty key in `exceptions` no longer causes an infinite loop.
+- Astral letters (for example mathematical letters) count as letters for exception word boundaries and positional `е`/`ц` rules.
+- Converting very long documents with many warnings no longer risks a stack overflow.
 
 ## [0.1.1] - 2026-09-13
 
