@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- Demo: open Word `.docx` files and download the converted document with its formatting, tables, headers and footers intact, plus `.srt` subtitles and drag-and-drop. Supported formats are listed on the page.
+- Demo: Russian interface.
+
 ## [0.2.0] - 2026-09-13
 
 ### Added
