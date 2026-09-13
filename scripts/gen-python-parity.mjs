@@ -31,7 +31,8 @@ for (const file of readdirSync(corpusDirectory).sort()) {
 section = 'test-literals';
 const literal = /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/gu;
 for (const file of readdirSync(join(root, 'test')).sort()) {
-  if (!file.endsWith('.test.ts')) continue;
+  // Site tests exercise the demo (file formats, UI), not library behavior.
+  if (!file.endsWith('.test.ts') || file.startsWith('site-')) continue;
   const source = readFileSync(join(root, 'test', file), 'utf8');
   for (const match of source.matchAll(literal)) {
     if (match[0].startsWith('`') && match[0].includes('${')) continue;
