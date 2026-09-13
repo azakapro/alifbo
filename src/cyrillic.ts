@@ -94,7 +94,7 @@ function toSourceOffsets(
 }
 
 function isLatinLetter(character: string): boolean {
-  return /^\p{Script=Latin}$/u.test(character) && /^\p{L}$/u.test(character);
+  return /^\p{L}$/u.test(character) && /^[A-Za-z\u00c0-\u024f\u1e00-\u1eff]/u.test(character.normalize('NFKC'));
 }
 
 /** The lowercased letter at `index` for positional rules, or '' when it is not a letter. */

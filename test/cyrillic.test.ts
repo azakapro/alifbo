@@ -135,4 +135,14 @@ describe('lossy Cyrillic conversion', () => {
     expect(result.text).toBe('тон 12.');
     expect(result.warnings.filter((warning) => warning.rule === 'latin.unmapped')).toHaveLength(0);
   });
+
+  it('warns for fullwidth Ａ and feminine ordinal ª', () => {
+    expect(toCyrillic('Ａ').warnings.map((warning) => warning.rule)).toContain('latin.unmapped');
+    expect(toCyrillic('ª').warnings.map((warning) => warning.rule)).toContain('latin.unmapped');
+  });
+
+  it('does not warn for IPA ɐ', () => {
+    const result = toCyrillic('ɐ');
+    expect(result.warnings.filter((warning) => warning.rule === 'latin.unmapped')).toHaveLength(0);
+  });
 });

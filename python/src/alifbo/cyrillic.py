@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import unicodedata
 from typing import Iterable, List, Mapping, Optional, Sequence, Tuple
 
@@ -100,11 +101,18 @@ def _letter_at(source: str, index: int) -> str:
     return lower_char(character) if unicodedata.category(character)[0] == "L" else ""
 
 
+_LATIN_START = re.compile("[A-Za-z\u00c0-\u024f\u1e00-\u1eff]")
+
+
 def _is_latin_letter(character: str) -> bool:
-    """True when ``character`` is a Latin-script letter (JS ``\\p{Script=Latin}`` + ``\\p{L}``)."""
-    if unicodedata.category(character)[0] != "L":
+    """True when ``character`` is a BMP letter whose NFKC form starts in Latin 1 / Extended A-B / Additional.
+
+    Astral letters (e.g. U+1D400) are skipped: the TypeScript loop walks UTF-16
+    code units, so a surrogate half never matches ``\\p{L}``.
+    """
+    if unicodedata.category(character)[0] != "L" or ord(character) > 0xFFFF:
         return False
-    return unicodedata.name(character, "").startswith("LATIN ")
+    return _LATIN_START.match(unicodedata.normalize("NFKC", character)) is not None
 
 
 def _case_replacement(source: str, index: int, lower: str) -> str:
