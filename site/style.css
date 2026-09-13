@@ -405,3 +405,11 @@ pre {
   font-size: 14px;
   color: var(--ink-2);
 }
+.status {
+  font-size: 14px;
+  color: var(--muted);
+  padding-bottom: 10px;
+}
+textarea.stale {
+  opacity: 0.55;
+}
