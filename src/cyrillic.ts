@@ -1,6 +1,6 @@
-import { firstCase, lowerChar } from './case.js';
-import { oldLatinCore, toNewLatin } from './latin.js';
-import { prepareText } from './normalize.js';
+import { firstCase, isUpper, lowerChar, upperText } from './case.js';
+import { oldLatinCore, toNewLatinMapped } from './latin.js';
+import { prepareTextMapped, sourceRange } from './normalize.js';
 import { applyExceptions, mapSegments } from './pipeline.js';
 import type { ConversionOptions, ConversionResult, Warning } from './types.js';
 
@@ -68,6 +68,8 @@ const DIRECT_TO_CYRILLIC: Readonly<Record<string, string>> = {
 
 const CYRILLIC_VOWELS = new Set(['а', 'е', 'ё', 'и', 'о', 'у', 'ў', 'э', 'ю', 'я']);
 
+const LATIN_VOWELS = new Set(['a', 'e', 'i', 'o', 'u', 'ö']);
+
 function warning(
   index: number,
   rule: string,
@@ -78,12 +80,41 @@ function warning(
   return { index, length, rule, message, alternatives };
 }
 
+/** Rewrite warning ranges from prepared-text offsets to offsets in the caller's text. */
+function toSourceOffsets(warnings: Warning[], origins: readonly number[], offset: number): void {
+  for (const item of warnings) {
+    const range = sourceRange(origins, item.index, item.length);
+    item.index = offset + range.index;
+    item.length = range.length;
+  }
+}
+
+/** The lowercased letter at `index` for positional rules, or '' when it is not a letter. */
+function letterAt(source: string, index: number): string {
+  const unit = source.charCodeAt(index);
+  const before = index > 0 ? source.charCodeAt(index - 1) : 0;
+  if (unit >= 0xdc00 && unit <= 0xdfff && before >= 0xd800 && before <= 0xdbff) {
+    return letterAt(source, index - 1);
+  }
+  const codePoint = String.fromCodePoint(source.codePointAt(index)!);
+  return /\p{L}/u.test(codePoint) ? lowerChar(codePoint) : '';
+}
+
+/** Case a multi-letter replacement: all caps inside an uppercase word, else title case. */
+function caseReplacement(source: string, index: number, lower: string): string {
+  const character = source[index]!;
+  if (!isUpper(character)) return lower;
+  const inUppercaseWord =
+    isUpper(source[index + 1] ?? '') || (index > 0 && isUpper(source[index - 1]!));
+  return inUppercaseWord ? upperText(lower) : firstCase(character, lower);
+}
+
 function fromCyrillicCore(
   text: string,
   offset: number,
   options: ConversionOptions,
 ): ConversionResult {
-  const source = applyExceptions(prepareText(text), options);
+  const { text: source, origins } = applyExceptions(prepareTextMapped(text), options);
   let output = '';
   const warnings: Warning[] = [];
   let previousLetter = '';
@@ -91,7 +122,6 @@ function fromCyrillicCore(
   for (let index = 0; index < source.length; index += 1) {
     const character = source[index]!;
     const lower = lowerChar(character);
-    const uppercase = character !== lower;
     let replacement: string | undefined;
 
     if (lower === 'е') {
@@ -103,7 +133,7 @@ function fromCyrillicCore(
       replacement = useYe ? 'ye' : 'e';
       warnings.push(
         warning(
-          offset + index,
+          index,
           'cyrillic.e.positional',
           'Cyrillic е can represent e or ye; a positional rule was applied.',
           ['e', 'ye'],
@@ -114,7 +144,7 @@ function fromCyrillicCore(
       replacement = useS ? 's' : 'ts';
       warnings.push(
         warning(
-          offset + index,
+          index,
           'cyrillic.tse.positional',
           'Cyrillic ц can represent s or ts; a positional rule was applied.',
           ['s', 'ts'],
@@ -124,7 +154,7 @@ function fromCyrillicCore(
       replacement = 'şç';
       warnings.push(
         warning(
-          offset + index,
+          index,
           'cyrillic.shcha.ambiguous',
           'Cyrillic щ has no single new-Latin equivalent; şç was chosen.',
           ['şç', 'ş'],
@@ -134,7 +164,7 @@ function fromCyrillicCore(
       replacement = 'ʼ';
       warnings.push(
         warning(
-          offset + index,
+          index,
           'cyrillic.hard-sign.ambiguous',
           'The hard sign was retained as tutuq belgisi.',
           ['ʼ', ''],
@@ -143,35 +173,25 @@ function fromCyrillicCore(
     } else if (lower === 'ь') {
       replacement = '';
       warnings.push(
-        warning(offset + index, 'cyrillic.soft-sign.ambiguous', 'The soft sign was dropped.', [
-          '',
-          'ʼ',
-        ]),
+        warning(index, 'cyrillic.soft-sign.ambiguous', 'The soft sign was dropped.', ['', 'ʼ']),
       );
     } else if (lower === 'ё' || lower === 'ю' || lower === 'я') {
       replacement = lower === 'ё' ? 'yo' : lower === 'ю' ? 'yu' : 'ya';
       const name = lower === 'ё' ? 'yo' : lower === 'ю' ? 'yu' : 'ya';
       warnings.push(
-        warning(
-          offset + index,
-          `cyrillic.${name}.compound`,
-          `Cyrillic ${lower} was expanded to ${name}.`,
-          [name, name.slice(1)],
-        ),
+        warning(index, `cyrillic.${name}.compound`, `Cyrillic ${lower} was expanded to ${name}.`, [
+          name,
+          name.slice(1),
+        ]),
       );
     } else {
       replacement = DIRECT_FROM_CYRILLIC[lower];
     }
 
-    output +=
-      replacement === undefined
-        ? character
-        : uppercase
-          ? firstCase(character, replacement)
-          : replacement;
-    if (/\p{L}/u.test(character)) previousLetter = lower;
-    else previousLetter = '';
+    output += replacement === undefined ? character : caseReplacement(source, index, replacement);
+    previousLetter = letterAt(source, index);
   }
+  toSourceOffsets(warnings, origins, offset);
   return { text: oldLatinCore(output, options).normalize('NFC'), warnings };
 }
 
@@ -181,7 +201,7 @@ export function fromCyrillic(text: string, options: ConversionOptions = {}): Con
 }
 
 function toCyrillicCore(text: string, offset: number): ConversionResult {
-  const source = prepareText(text);
+  const { text: source, origins } = prepareTextMapped(text);
   let output = '';
   const warnings: Warning[] = [];
   let index = 0;
@@ -190,6 +210,10 @@ function toCyrillicCore(text: string, offset: number): ConversionResult {
     const lower = lowerChar(character);
     const uppercase = character !== lower;
     const pair = lower + lowerChar(source[index + 1] ?? '');
+    // Inverse of the fromCyrillic е rule: Cyrillic е is read "ye" at a word start, after
+    // a vowel, or after ъ/ь, so there "ye" maps back to е and a bare "e" must be э.
+    const previous = index > 0 ? letterAt(source, index - 1) : '';
+    const positional = previous === '' || previous === 'ʼ' || LATIN_VOWELS.has(previous);
     let replacement: string | undefined;
     let consumed = 1;
 
@@ -198,7 +222,7 @@ function toCyrillicCore(text: string, offset: number): ConversionResult {
       consumed = 2;
       warnings.push(
         warning(
-          offset + index,
+          index,
           'latin.shcha.ambiguous',
           'şç was interpreted as Cyrillic щ rather than шч.',
           ['щ', 'шч'],
@@ -210,7 +234,7 @@ function toCyrillicCore(text: string, offset: number): ConversionResult {
       consumed = 2;
       warnings.push(
         warning(
-          offset + index,
+          index,
           `latin.${pair}.ambiguous`,
           `${pair} was interpreted as one iotated Cyrillic letter.`,
           [replacement, `й${DIRECT_TO_CYRILLIC[pair[1]!]}`],
@@ -221,43 +245,46 @@ function toCyrillicCore(text: string, offset: number): ConversionResult {
       replacement = 'ц';
       consumed = 2;
       warnings.push(
+        warning(index, 'latin.tse.ambiguous', 'ts was interpreted as Cyrillic ц.', ['ц', 'тс'], 2),
+      );
+    } else if (pair === 'ye' && positional) {
+      replacement = 'е';
+      consumed = 2;
+      warnings.push(
         warning(
-          offset + index,
-          'latin.tse.ambiguous',
-          'ts was interpreted as Cyrillic ц.',
-          ['ц', 'тс'],
+          index,
+          'latin.ye.positional',
+          'ye at a word start, after a vowel, or after tutuq was interpreted as Cyrillic е.',
+          ['е', 'йе'],
           2,
         ),
       );
     } else if (lower === 'e') {
-      replacement = 'е';
+      replacement = positional ? 'э' : 'е';
       warnings.push(
         warning(
-          offset + index,
+          index,
           'latin.e.ambiguous',
-          'Latin e can correspond to Cyrillic е or э; е was chosen.',
-          ['е', 'э'],
+          `Latin e can correspond to Cyrillic е or э; ${replacement} was chosen.`,
+          positional ? ['э', 'е'] : ['е', 'э'],
         ),
       );
     } else if (character === 'ʼ') {
       replacement = 'ъ';
       warnings.push(
-        warning(
-          offset + index,
-          'latin.tutuq.ambiguous',
-          'Tutuq belgisi was interpreted as a hard sign.',
-          ['ъ', 'ь', ''],
-        ),
+        warning(index, 'latin.tutuq.ambiguous', 'Tutuq belgisi was interpreted as a hard sign.', [
+          'ъ',
+          'ь',
+          '',
+        ]),
       );
     } else if (lower === 'c') {
       replacement = 'ц';
       warnings.push(
-        warning(
-          offset + index,
-          'latin.c.ambiguous',
-          'Standalone c was interpreted as Cyrillic ц.',
-          ['ц', 'с'],
-        ),
+        warning(index, 'latin.c.ambiguous', 'Standalone c was interpreted as Cyrillic ц.', [
+          'ц',
+          'с',
+        ]),
       );
     } else {
       replacement = DIRECT_TO_CYRILLIC[lower];
@@ -271,11 +298,17 @@ function toCyrillicCore(text: string, offset: number): ConversionResult {
           : replacement;
     index += consumed;
   }
+  toSourceOffsets(warnings, origins, offset);
   return { text: output.normalize('NFC'), warnings };
 }
 
 /** Convert new Uzbek Latin to Cyrillic and report every lossy or ambiguous choice. */
 export function toCyrillic(text: string, options: ConversionOptions = {}): ConversionResult {
-  const canonical = toNewLatin(text, options).text;
-  return mapSegments(canonical, options, (segment, start) => toCyrillicCore(segment, start));
+  const canonical = toNewLatinMapped(text, options);
+  const result = mapSegments(canonical.text, options, (segment, start) =>
+    toCyrillicCore(segment, start),
+  );
+  // Warnings point into the new-Latin intermediate; report them against the caller's text.
+  toSourceOffsets(result.warnings, canonical.origins, 0);
+  return result;
 }

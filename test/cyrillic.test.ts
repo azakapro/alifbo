@@ -40,7 +40,7 @@ describe('lossy Cyrillic conversion', () => {
     ['v', 'V', 'в', 'В'],
     ['g', 'G', 'г', 'Г'],
     ['d', 'D', 'д', 'Д'],
-    ['e', 'E', 'е', 'Е'],
+    ['e', 'E', 'э', 'Э'], // a lone e starts a word, where Cyrillic uses э
     ['j', 'J', 'ж', 'Ж'],
     ['z', 'Z', 'з', 'З'],
     ['i', 'I', 'и', 'И'],
@@ -99,7 +99,7 @@ describe('lossy Cyrillic conversion', () => {
 
   it('warns for ambiguous reverse choices with source indexes', () => {
     const result = toCyrillic('e şç yo yu ya ʼ');
-    expect(result.text).toBe('е щ ё ю я ъ');
+    expect(result.text).toBe('э щ ё ю я ъ');
     expect(result.warnings.length).toBeGreaterThanOrEqual(6);
     expect(result.warnings[0]).toMatchObject({ index: 0, length: 1 });
   });

@@ -1,5 +1,6 @@
 import seedExceptions from './data/exceptions.json';
 import seedProtectedTerms from './data/protected-terms.json';
+import type { MappedText } from './normalize.js';
 import type { ConversionOptions, Warning } from './types.js';
 
 interface Span {
@@ -59,23 +60,37 @@ export function splitProtected(text: string, options: ConversionOptions = {}): S
   return segments.length > 0 ? segments : [{ text, start: 0, protected: false }];
 }
 
-function isWordCharacter(character: string | undefined): boolean {
-  return character !== undefined && /[\p{L}\p{N}\p{M}]/u.test(character);
+const WORD_CHARACTER = /^[\p{L}\p{N}\p{M}]$/u;
+
+/** Whether the code point ending just before `index` is a letter, number or mark. */
+function isWordBefore(text: string, index: number): boolean {
+  if (index <= 0) return false;
+  const low = text.charCodeAt(index - 1);
+  const start = low >= 0xdc00 && low <= 0xdfff && index >= 2 ? index - 2 : index - 1;
+  return WORD_CHARACTER.test(String.fromCodePoint(text.codePointAt(start)!));
 }
 
-export function applyExceptions(text: string, options: ConversionOptions): string {
-  const entries = Object.entries({ ...seedExceptions, ...(options.exceptions ?? {}) }).sort(
-    ([left], [right]) => right.length - left.length,
-  );
+/** Whether the code point starting at `index` is a letter, number or mark. */
+function isWordAt(text: string, index: number): boolean {
+  if (index >= text.length) return false;
+  return WORD_CHARACTER.test(String.fromCodePoint(text.codePointAt(index)!));
+}
+
+export function applyExceptions(source: MappedText, options: ConversionOptions): MappedText {
+  const { text, origins } = source;
+  const entries = Object.entries({ ...seedExceptions, ...(options.exceptions ?? {}) })
+    .filter(([key]) => key.length > 0)
+    .sort(([left], [right]) => right.length - left.length);
   let result = '';
+  const resultOrigins: number[] = [];
   let cursor = 0;
   while (cursor < text.length) {
     let replacement: { key: string; value: string } | undefined;
     for (const [key, value] of entries) {
       if (
         text.startsWith(key, cursor) &&
-        !isWordCharacter(text[cursor - 1]) &&
-        !isWordCharacter(text[cursor + key.length])
+        !isWordBefore(text, cursor) &&
+        !isWordAt(text, cursor + key.length)
       ) {
         replacement = { key, value };
         break;
@@ -83,13 +98,18 @@ export function applyExceptions(text: string, options: ConversionOptions): strin
     }
     if (replacement !== undefined) {
       result += replacement.value;
+      for (let unit = 0; unit < replacement.value.length; unit += 1) {
+        resultOrigins.push(origins[cursor]!);
+      }
       cursor += replacement.key.length;
     } else {
       result += text[cursor];
+      resultOrigins.push(origins[cursor]!);
       cursor += 1;
     }
   }
-  return result;
+  resultOrigins.push(origins[text.length]!);
+  return { text: result, origins: resultOrigins };
 }
 
 export function mapSegments(
@@ -105,8 +125,36 @@ export function mapSegments(
     } else {
       const converted = convert(segment.text, segment.start);
       output += converted.text;
-      warnings.push(...converted.warnings);
+      for (const warning of converted.warnings) warnings.push(warning);
     }
   }
   return { text: output, warnings };
+}
+
+/** Like `mapSegments`, but for converters that report where each output unit came from. */
+export function mapSegmentsMapped(
+  text: string,
+  options: ConversionOptions,
+  convert: (text: string, start: number) => MappedText,
+): MappedText {
+  let output = '';
+  const origins: number[] = [];
+  for (const segment of splitProtected(text, options)) {
+    const converted = segment.protected
+      ? {
+          text: segment.text,
+          origins: Array.from(
+            { length: segment.text.length + 1 },
+            (_, index) => segment.start + index,
+          ),
+        }
+      : convert(segment.text, segment.start);
+    output += converted.text;
+    // A loop rather than push(...spread), which overflows the stack on long documents.
+    for (let unit = 0; unit < converted.text.length; unit += 1) {
+      origins.push(converted.origins[unit]!);
+    }
+  }
+  origins.push(text.length);
+  return { text: output, origins };
 }

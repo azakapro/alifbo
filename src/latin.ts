@@ -1,6 +1,6 @@
 import { firstCase, isUpper, lowerChar, upperText } from './case.js';
-import { applyExceptions, mapSegments } from './pipeline.js';
-import { prepareText } from './normalize.js';
+import { applyExceptions, mapSegments, mapSegmentsMapped } from './pipeline.js';
+import { prepareTextMapped, type MappedText } from './normalize.js';
 import type { ConversionOptions, ConversionResult } from './types.js';
 
 // TODO(ng): Change only this value if the authoritative law assigns a new single letter.
@@ -10,16 +10,29 @@ function isPairAt(text: string, index: number, first: string, second: string): b
   return lowerChar(text[index] ?? '') === first && lowerChar(text[index + 1] ?? '') === second;
 }
 
-export function oldLatinCore(text: string, options: ConversionOptions = {}): string {
-  const source = applyExceptions(prepareText(text), options);
+/** Previous Latin to new Latin, recording the source offset of every output code unit. */
+export function oldLatinCoreMapped(
+  text: string,
+  options: ConversionOptions = {},
+  offset = 0,
+): MappedText {
+  const { text: source, origins } = applyExceptions(prepareTextMapped(text), options);
   let output = '';
+  const outputOrigins: number[] = [];
+  const emit = (piece: string, sourceIndex: number) => {
+    output += piece;
+    for (let unit = 0; unit < piece.length; unit += 1) {
+      outputOrigins.push(offset + origins[sourceIndex]!);
+    }
+  };
+
   let index = 0;
   while (index < source.length) {
     const character = source[index]!;
     const next = source[index + 1];
 
     if ((lowerChar(character) === 'o' || lowerChar(character) === 'g') && next === 'ʻ') {
-      output += firstCase(character, lowerChar(character) === 'o' ? 'ö' : 'ğ');
+      emit(firstCase(character, lowerChar(character) === 'o' ? 'ö' : 'ğ'), index);
       index += 2;
       continue;
     }
@@ -28,36 +41,56 @@ export function oldLatinCore(text: string, options: ConversionOptions = {}): str
       next === 'ʼ' &&
       lowerChar(source[index + 2] ?? '') === 'h'
     ) {
-      output += character + next + source[index + 2];
+      emit(character, index);
+      emit(next, index + 1);
+      emit(source[index + 2]!, index + 2);
       index += 3;
       continue;
     }
     if (isPairAt(source, index, 's', 'h')) {
-      output += firstCase(character, 'ş');
+      emit(firstCase(character, 'ş'), index);
       index += 2;
       continue;
     }
     if (isPairAt(source, index, 'c', 'h')) {
-      output += firstCase(character, 'ç');
+      emit(firstCase(character, 'ç'), index);
       index += 2;
       continue;
     }
     if (options.ngAsDigraph !== false && isPairAt(source, index, 'n', 'g')) {
-      output +=
-        NG_DIGRAPH_OUTPUT === 'ng'
-          ? source.slice(index, index + 2)
-          : firstCase(character, NG_DIGRAPH_OUTPUT);
+      if (NG_DIGRAPH_OUTPUT === 'ng') {
+        emit(source[index]!, index);
+        emit(source[index + 1]!, index + 1);
+      } else {
+        emit(firstCase(character, NG_DIGRAPH_OUTPUT), index);
+      }
       index += 2;
       continue;
     }
-    output += character;
+    emit(character, index);
     index += 1;
   }
-  return output.normalize('NFC');
+  outputOrigins.push(offset + origins[source.length]!);
+
+  const normalized = output.normalize('NFC');
+  if (normalized.length !== output.length) {
+    const end = outputOrigins[outputOrigins.length - 1]!;
+    return {
+      text: normalized,
+      origins: Array.from({ length: normalized.length + 1 }, (_, unit) =>
+        Math.min(outputOrigins[unit] ?? end, end),
+      ),
+    };
+  }
+  return { text: normalized, origins: outputOrigins };
+}
+
+export function oldLatinCore(text: string, options: ConversionOptions = {}): string {
+  return oldLatinCoreMapped(text, options).text;
 }
 
 function newLatinCore(text: string, options: ConversionOptions): string {
-  const source = applyExceptions(prepareText(text), options);
+  const { text: source } = applyExceptions(prepareTextMapped(text), options);
   let output = '';
   for (let index = 0; index < source.length; index += 1) {
     const character = source[index]!;
@@ -72,14 +105,23 @@ function newLatinCore(text: string, options: ConversionOptions): string {
             : lower === 'ç'
               ? 'ch'
               : undefined;
+    const inUppercaseWord =
+      isUpper(character) && (isUpper(source[index + 1] ?? '') || isUpper(source[index - 1] ?? ''));
     output +=
       replacement === undefined
         ? character
-        : isUpper(character) && isUpper(source[index + 1] ?? '')
+        : inUppercaseWord
           ? upperText(replacement)
           : firstCase(character, replacement);
   }
   return output.normalize('NFC');
+}
+
+/** Previous Latin to new Latin across protected spans, with offsets into `text`. */
+export function toNewLatinMapped(text: string, options: ConversionOptions = {}): MappedText {
+  return mapSegmentsMapped(text, options, (segment, start) =>
+    oldLatinCoreMapped(segment, options, start),
+  );
 }
 
 /** Convert previous Uzbek Latin text to the new Latin alphabet. */

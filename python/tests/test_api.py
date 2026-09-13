@@ -63,9 +63,11 @@ def test_direct_cyrillic_mappings(lower: str, upper: str, latin_lower: str, lati
         assert to_cyrillic(latin_upper).text == upper
 
 
-def test_latin_e_maps_to_cyrillic_ye():
-    assert to_cyrillic("e").text == "е"
-    assert to_cyrillic("E").text == "Е"
+def test_lone_latin_e_starts_a_word_and_maps_to_cyrillic_e_oborotnoye():
+    # A lone e starts a word, where Cyrillic uses э; after a consonant it is е.
+    assert to_cyrillic("e").text == "э"
+    assert to_cyrillic("E").text == "Э"
+    assert to_cyrillic("ke").text == "ке"
 
 
 def test_warns_at_each_ambiguous_source_construct():
@@ -85,7 +87,7 @@ def test_warns_at_each_ambiguous_source_construct():
 
 def test_reverse_warnings_with_source_indexes():
     result = to_cyrillic("e şç yo yu ya ʼ")
-    assert result.text == "е щ ё ю я ъ"
+    assert result.text == "э щ ё ю я ъ"
     assert len(result.warnings) >= 6
     assert (result.warnings[0].index, result.warnings[0].length) == (0, 1)
 

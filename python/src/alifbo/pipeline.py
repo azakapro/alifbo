@@ -4,9 +4,7 @@ JavaScript semantics that matter here are emulated explicitly:
 
 * ``\\p{L}``/``\\p{N}``/``\\p{M}`` are implemented with ``unicodedata.category``.
 * JavaScript ``\\s`` is spelled out as an explicit character class.
-* Where the TypeScript code tests one UTF-16 code unit (not a code point), a
-  character outside the Basic Multilingual Plane is treated like a lone
-  surrogate, i.e. never a letter, number, or mark.
+* Exception word boundaries test whole code points, so astral letters count.
 * ``Object.entries`` ordering (array-index keys first) is reproduced for exceptions.
 """
 
@@ -19,6 +17,7 @@ from dataclasses import dataclass
 from importlib.resources import files
 from typing import Callable, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
+from .normalize import MappedText, text_units, unit_length, utf16_length
 from .types import Warning
 
 
@@ -37,19 +36,6 @@ _MAX_ARRAY_INDEX = 2**32 - 2
 _ARRAY_INDEX = re.compile("0|[1-9][0-9]*")
 
 
-def utf16_length(text: str) -> int:
-    return len(text) + sum(1 for character in text if ord(character) > 0xFFFF)
-
-
-def unit_length(character: str, utf16: bool) -> int:
-    return 2 if utf16 and ord(character) > 0xFFFF else 1
-
-
-def is_bmp_letter(character: str) -> bool:
-    """JavaScript ``/\\p{L}/u.test(s[i])`` for a single UTF-16 code unit."""
-    return ord(character) <= 0xFFFF and unicodedata.category(character)[0] == "L"
-
-
 def _is_letter(character: str) -> bool:
     return unicodedata.category(character)[0] == "L"
 
@@ -58,12 +44,9 @@ def _is_letter_or_number(character: str) -> bool:
     return unicodedata.category(character)[0] in "LN"
 
 
-def _is_word_character(character: Optional[str]) -> bool:
-    return (
-        character is not None
-        and ord(character) <= 0xFFFF
-        and unicodedata.category(character)[0] in "LNM"
-    )
+def _is_word_character(character: str) -> bool:
+    """JavaScript ``/^[\\p{L}\\p{N}\\p{M}]$/u`` for one whole code point."""
+    return unicodedata.category(character)[0] in "LNM"
 
 
 def _is_array_index(key: str) -> bool:
@@ -204,47 +187,64 @@ def split_protected(text: str, options: Options = DEFAULT_OPTIONS) -> List[Segme
     return segments if segments else [Segment(text, 0, False)]
 
 
-def apply_exceptions(text: str, options: Options) -> str:
+def apply_exceptions(source: MappedText, options: Options) -> MappedText:
+    """Replace whole-word exceptions, mapping each replacement unit to the key's start."""
+    text, origins = source
+    utf16 = options.utf16_offsets
     entries = options.exception_entries
-    if not entries:
-        return text
     length = len(text)
     result: List[str] = []
+    result_origins: List[int] = []
     cursor = 0
+    units = 0  # ``cursor`` in offset units
     while cursor < length:
-        before = text[cursor - 1] if cursor > 0 else None
+        before_is_word = cursor > 0 and _is_word_character(text[cursor - 1])
         for key, value in entries:
             after_index = cursor + len(key)
             if (
-                text.startswith(key, cursor)
-                and not _is_word_character(before)
-                and not _is_word_character(text[after_index] if after_index < length else None)
+                not before_is_word
+                and text.startswith(key, cursor)
+                and not (after_index < length and _is_word_character(text[after_index]))
             ):
                 result.append(value)
+                result_origins.extend([origins[units]] * text_units(value, utf16))
                 cursor = after_index
+                units += text_units(key, utf16)
                 break
         else:
-            result.append(text[cursor])
+            character = text[cursor]
+            result.append(character)
+            width = unit_length(character, utf16)
+            result_origins.extend(origins[units : units + width])
             cursor += 1
-    return "".join(result)
+            units += width
+    result_origins.append(origins[units])
+    return MappedText("".join(result), result_origins)
 
 
 Converter = Callable[[str, int], Tuple[str, List[Warning]]]
 
 
-def map_segments(text: str, options: Options, convert: Converter) -> Tuple[str, List[Warning]]:
-    """Convert unprotected segments; ``convert`` receives the segment start in offset units."""
-    output: List[str] = []
-    warnings: List[Warning] = []
+def segment_starts(text: str, options: Options) -> List[Tuple[Segment, int]]:
+    """Protected-span segments with each start converted to offset units."""
+    starts: List[Tuple[Segment, int]] = []
     cursor = 0
     units = 0
     for segment in split_protected(text, options):
         if options.utf16_offsets:
             units += utf16_length(text[cursor : segment.start])
             cursor = segment.start
-            start = units
+            starts.append((segment, units))
         else:
-            start = segment.start
+            starts.append((segment, segment.start))
+    return starts
+
+
+def map_segments(text: str, options: Options, convert: Converter) -> Tuple[str, List[Warning]]:
+    """Convert unprotected segments; ``convert`` receives the segment start in offset units."""
+    output: List[str] = []
+    warnings: List[Warning] = []
+    for segment, start in segment_starts(text, options):
         if segment.protected:
             output.append(segment.text)
         else:
@@ -252,3 +252,24 @@ def map_segments(text: str, options: Options, convert: Converter) -> Tuple[str, 
             output.append(converted)
             warnings.extend(segment_warnings)
     return "".join(output), warnings
+
+
+def map_segments_mapped(
+    text: str, options: Options, convert: Callable[[str, int], MappedText]
+) -> MappedText:
+    """Like ``map_segments``, for converters that report where each output unit came from."""
+    utf16 = options.utf16_offsets
+    output: List[str] = []
+    origins: List[int] = []
+    for segment, start in segment_starts(text, options):
+        if segment.protected:
+            converted = MappedText(
+                segment.text,
+                list(range(start, start + text_units(segment.text, utf16) + 1)),
+            )
+        else:
+            converted = convert(segment.text, start)
+        output.append(converted.text)
+        origins.extend(converted.origins[: text_units(converted.text, utf16)])
+    origins.append(text_units(text, utf16))
+    return MappedText("".join(output), origins)

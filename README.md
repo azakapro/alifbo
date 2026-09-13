@@ -114,7 +114,7 @@ The input characters U+02BB, U+02BC, U+0027, U+2018, U+2019, U+0060, U+00B4, U+2
 
 ## Cyrillic warnings
 
-Cyrillic conversion cannot be fully reversible. Positional `е`, ambiguous `ц`, `щ`, the hard and soft signs, and expanded `ё`, `ю`, and `я` produce structured warnings. Reverse conversion likewise warns when choosing among `е`/`э`, `щ`/`шч`, `ц`/`тс`, one-letter iotated forms, and interpretations of the tutuq sign. Warning indexes and lengths use JavaScript UTF-16 string offsets into the source text.
+Cyrillic conversion cannot be fully reversible. Positional `е`, ambiguous `ц`, `щ`, the hard and soft signs, and expanded `ё`, `ю`, and `я` produce structured warnings. Reverse conversion likewise warns when choosing among `е`/`э`, `щ`/`шч`, `ц`/`тс`, one-letter iotated forms, and interpretations of the tutuq sign. Warning indexes and lengths use JavaScript UTF-16 string offsets into the text you passed in, even when normalization, exceptions, or the old-to-new Latin pre-pass change lengths.
 
 The default positional rules are intentionally mechanical:
 
@@ -122,6 +122,8 @@ The default positional rules are intentionally mechanical:
 - `ц` becomes `s` at a word start (and for the second letter of `цц`); otherwise it becomes `ts`.
 - `ъ` becomes U+02BC; `ь` is dropped.
 - `щ`, `ё`, `ю`, and `я` become `şç`, `yo`, `yu`, and `ya`.
+
+`toCyrillic` applies the inverse rule, so words round-trip: at a word start, after a vowel, or after the tutuq sign, `ye` becomes `е` and a bare `e` becomes `э` (`Yevropa` → `Европа`, `ekran` → `экран`, `poet` → `поэт`, `podʼyezd` → `подъезд`); elsewhere `e` becomes `е`.
 
 Inspect `warnings` whenever converting to or from Cyrillic, and use a word exception when the default is wrong for a known term.
 
