@@ -57,7 +57,8 @@
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "check": "npm run build && npm run lint && npm test && npm run smoke",
-    "prepublishOnly": "npm run check"
+    "prepublishOnly": "npm run check",
+    "site": "node scripts/build-site.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -65,8 +66,8 @@
     "esbuild": "^0.28.2",
     "eslint": "^10.10.0",
     "prettier": "^3.6.2",
-    "tsx": "^4.23.13",
     "tsup": "^8.5.0",
+    "tsx": "^4.23.13",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.42.0",
     "vitest": "^5.0.0"

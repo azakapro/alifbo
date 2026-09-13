@@ -58,3 +58,19 @@ Never introduce locale-aware `toUpperCase`, `toLowerCase`, `toLocaleUpperCase`, 
 ## Changing the `ng` behavior
 
 Do not change `ng` based on a news report alone. Link the enacted lex.uz text in the pull request, update `NG_DIGRAPH_OUTPUT` in `src/latin.ts`, update the README TODO/status, and add golden plus round-trip cases in the same change.
+
+## Releasing (maintainers)
+
+Releases are published by `.github/workflows/publish.yml` using npm trusted publishing, so no npm token is stored anywhere.
+
+1. Update `CHANGELOG.md` and bump the version: `npm version patch --no-git-tag-version` (or `minor`).
+2. Open a pull request with those changes and merge it once CI passes.
+3. Tag the merge commit on `main` and push the tag:
+
+   ```sh
+   git switch main && git pull
+   git tag v0.1.2
+   git push origin v0.1.2
+   ```
+
+The workflow checks that the tag matches `package.json`, runs `npm run check`, publishes to npm with provenance, and creates the GitHub release with generated notes. Do not run `npm publish` locally.
