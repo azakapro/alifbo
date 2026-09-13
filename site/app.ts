@@ -1,16 +1,14 @@
+import type { ConversionOptions } from '../src/index.js';
 import {
-  detectAlphabet,
-  fromCyrillic,
-  toCyrillic,
-  toNewLatin,
-  toOldLatin,
-  type ConversionOptions,
-  type Warning,
-} from '../src/index.js';
+  run,
+  WORDS_PER_GROUP,
+  type ConvertRequest,
+  type ConvertResponse,
+  type Source,
+  type Target,
+} from './engine.js';
 
 type Lang = 'uz' | 'en';
-type Source = 'cyrillic' | 'old-latin' | 'new-latin';
-type Target = Source;
 
 const STRINGS = {
   uz: {
@@ -34,6 +32,7 @@ const STRINGS = {
     download: 'Yuklab olish',
     tryExample: 'Misol:',
     privacy: 'Matn brauzeringizdan chiqmaydi.',
+    working: 'Oʻgirilmoqda…',
     placeholder: 'Matnni shu yerga yozing yoki joylashtiring…',
     chars: 'belgi',
     options: 'Sozlamalar',
@@ -70,6 +69,7 @@ const STRINGS = {
     download: 'Download',
     tryExample: 'Try:',
     privacy: 'Your text never leaves your browser.',
+    working: 'Converting…',
     placeholder: 'Type or paste Uzbek text here…',
     chars: 'chars',
     options: 'Options',
@@ -133,12 +133,18 @@ const EXAMPLES: Record<string, string> = {
   tutuq: 'Isʼhoq va asʼhob soʻzlaridagi tutuq belgisi saqlanadi.',
 };
 
+// Inputs above this size wait for a pause in typing before converting.
+const LARGE_INPUT = 100_000;
+// Show the busy indicator only when a conversion is noticeably slow.
+const BUSY_DELAY_MS = 150;
+
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const input = $<HTMLTextAreaElement>('input');
 const output = $<HTMLTextAreaElement>('output');
 const fromSelect = $<HTMLSelectElement>('from');
 const toSelect = $<HTMLSelectElement>('to');
 const detected = $('detected');
+const status = $('status');
 const protectSpans = $<HTMLInputElement>('protectSpans');
 const protectedTerms = $<HTMLInputElement>('protectedTerms');
 const reviewList = $('reviewList');
@@ -146,7 +152,10 @@ const reviewEmpty = $('reviewEmpty');
 const reviewCount = $('reviewCount');
 
 let lang: Lang = readStored('alifbo.lang') === 'en' ? 'en' : 'uz';
-let lastWarnings: { warnings: Warning[]; basis: string } = { warnings: [], basis: '' };
+let latest: ConvertResponse | undefined;
+let requestId = 0;
+let debounce = 0;
+let busyTimer = 0;
 
 function readStored(key: string): string | null {
   try {
@@ -180,7 +189,7 @@ function applyLanguage(): void {
     button.setAttribute('aria-pressed', String(button.dataset.lang === lang));
   }
   input.placeholder = t('placeholder');
-  update();
+  if (latest) render(latest);
 }
 
 function options(): ConversionOptions {
@@ -191,130 +200,101 @@ function options(): ConversionOptions {
   return { protectSpans: protectSpans.checked, protectedTerms: terms };
 }
 
-function resolveSource(text: string): Source {
-  const choice = fromSelect.value;
-  if (choice !== 'auto') return choice as Source;
-  const { alphabet } = detectAlphabet(text);
-  if (alphabet === 'cyrillic' || (alphabet === 'mixed' && /[А-яЁёЎўҚқҒғҲҳ]/u.test(text))) {
-    return 'cyrillic';
-  }
-  return alphabet === 'new-latin' ? 'new-latin' : 'old-latin';
-}
-
-/** Run a conversion. `basis` is the text that warning offsets point into. */
-function convert(
-  text: string,
-  from: Source,
-  to: Target,
-  opts: ConversionOptions,
-): { text: string; warnings: Warning[]; basis: string } {
-  if (from === 'cyrillic') {
-    if (to === 'cyrillic') return { text, warnings: [], basis: text };
-    const latin = fromCyrillic(text, opts);
-    const result = to === 'old-latin' ? toOldLatin(latin.text, opts).text : latin.text;
-    return { text: result, warnings: latin.warnings, basis: text };
-  }
-  const newLatin = from === 'old-latin' ? toNewLatin(text, opts) : { text, warnings: [] };
-  if (to === 'new-latin')
-    return { text: toNewLatin(newLatin.text, opts).text, warnings: [], basis: text };
-  if (to === 'old-latin')
-    return { text: toOldLatin(newLatin.text, opts).text, warnings: [], basis: text };
-  // toCyrillic accepts old or new Latin and reports offsets into the text it was given.
-  const cyrillic = toCyrillic(text, opts);
-  return { text: cyrillic.text, warnings: cyrillic.warnings, basis: text };
+// Conversion runs in a worker so long documents never freeze typing or scrolling. If workers
+// are unavailable (very old browsers), fall back to converting on the main thread.
+let worker: Worker | undefined;
+try {
+  worker = new Worker(new URL('./worker.js', import.meta.url), { type: 'module' });
+  worker.addEventListener('message', (event: MessageEvent<ConvertResponse>) => {
+    receive(event.data);
+  });
+  worker.addEventListener('error', () => {
+    worker = undefined;
+    update();
+  });
+} catch {
+  worker = undefined;
 }
 
 function update(): void {
-  const text = input.value;
-  const from = resolveSource(text);
-  const to = toSelect.value as Target;
-  const result = convert(text, from, to, options());
-
-  output.value = result.text;
-  $('inCount').textContent = text ? `${[...text].length} ${t('chars')}` : '';
-  $('outCount').textContent = result.text ? `${[...result.text].length} ${t('chars')}` : '';
-  detected.textContent =
-    fromSelect.value === 'auto' && text.trim()
-      ? t('detected') +
-        t(from === 'cyrillic' ? 'cyrillic' : from === 'new-latin' ? 'newLatin' : 'oldLatin')
-      : '';
-  lastWarnings = result;
-  renderReview();
-}
-
-function ruleKey(rule: string): string {
-  if (/^cyrillic\.(yo|yu|ya)\.compound$/.test(rule)) return 'cyrillic.compound';
-  if (/^latin\.(yo|yu|ya)\.ambiguous$/.test(rule)) return 'latin.iotated';
-  return rule;
-}
-
-const WORD_CHAR = /[\p{L}\p{M}\p{N}ʻʼ'‘’`-]/u;
-
-function wordAround(basis: string, index: number, length: number) {
-  let start = index;
-  let end = index + length;
-  while (start > 0 && WORD_CHAR.test(basis[start - 1]!)) start--;
-  while (end < basis.length && WORD_CHAR.test(basis[end]!)) end++;
-  return {
-    before: basis.slice(start, index),
-    hit: basis.slice(index, index + length),
-    after: basis.slice(index + length, end),
+  clearTimeout(debounce);
+  requestId += 1;
+  const request: ConvertRequest = {
+    id: requestId,
+    text: input.value,
+    from: fromSelect.value as Source | 'auto',
+    to: toSelect.value as Target,
+    options: options(),
   };
+  clearTimeout(busyTimer);
+  busyTimer = window.setTimeout(() => {
+    status.textContent = t('working');
+    output.classList.add('stale');
+  }, BUSY_DELAY_MS);
+  if (worker) worker.postMessage(request);
+  else receive(run(request));
 }
 
-function renderReview(): void {
-  const { warnings, basis } = lastWarnings;
-  interface Group {
-    alternatives: string[];
-    words: Map<string, { parts: ReturnType<typeof wordAround>; count: number }>;
-  }
-  const groups = new Map<string, Group>();
+function scheduleUpdate(): void {
+  clearTimeout(debounce);
+  debounce = window.setTimeout(update, input.value.length > LARGE_INPUT ? 300 : 0);
+}
 
-  for (const warning of warnings) {
-    const key = ruleKey(warning.rule);
-    const group: Group = groups.get(key) ?? { alternatives: [], words: new Map() };
-    for (const alternative of warning.alternatives ?? []) {
-      if (!group.alternatives.includes(alternative)) group.alternatives.push(alternative);
-    }
-    const parts = wordAround(basis, warning.index, warning.length);
-    const id = `${parts.before} ${parts.hit} ${parts.after}`;
-    const existing = group.words.get(id);
-    if (existing) existing.count++;
-    else group.words.set(id, { parts, count: 1 });
-    groups.set(key, group);
-  }
+function receive(response: ConvertResponse): void {
+  // A newer request is already on its way; drop this stale result.
+  if (response.id !== requestId) return;
+  clearTimeout(busyTimer);
+  status.textContent = '';
+  output.classList.remove('stale');
+  latest = response;
+  if (output.value !== response.text) output.value = response.text;
+  render(response);
+}
+
+function render(response: ConvertResponse): void {
+  $('inCount').textContent = response.inputChars
+    ? `${response.inputChars.toLocaleString()} ${t('chars')}`
+    : '';
+  $('outCount').textContent = response.outputChars
+    ? `${response.outputChars.toLocaleString()} ${t('chars')}`
+    : '';
+  const source = response.source;
+  detected.textContent =
+    fromSelect.value === 'auto' && response.inputChars > 0
+      ? t('detected') +
+        t(source === 'cyrillic' ? 'cyrillic' : source === 'new-latin' ? 'newLatin' : 'oldLatin')
+      : '';
 
   reviewList.replaceChildren();
-  reviewEmpty.hidden = warnings.length > 0 || !input.value.trim();
-  reviewCount.textContent = warnings.length ? String(warnings.length) : '';
+  reviewEmpty.hidden = response.warningCount > 0 || response.inputChars === 0;
+  reviewCount.textContent = response.warningCount ? response.warningCount.toLocaleString() : '';
 
-  for (const [key, group] of groups) {
+  for (const group of response.groups) {
     const card = document.createElement('article');
     card.className = 'group';
     const explanation = document.createElement('p');
-    explanation.textContent = RULES[lang][key] ?? warningsMessage(key);
+    explanation.textContent = RULES[lang][group.key] ?? group.message;
     card.append(explanation);
 
     const words = document.createElement('div');
     words.className = 'words';
-    const entries = [...group.words.values()].sort((a, b) => b.count - a.count);
-    for (const { parts, count } of entries.slice(0, 60)) {
+    for (const word of group.words) {
       const chip = document.createElement('span');
       chip.className = 'word';
       const mark = document.createElement('mark');
-      mark.textContent = parts.hit || '·';
-      chip.append(parts.before, mark, parts.after);
-      if (count > 1) {
+      mark.textContent = word.hit || '·';
+      chip.append(word.before, mark, word.after);
+      if (word.count > 1) {
         const small = document.createElement('small');
-        small.textContent = `×${count}`;
+        small.textContent = `×${word.count.toLocaleString()}`;
         chip.append(small);
       }
       words.append(chip);
     }
-    if (entries.length > 60) {
+    if (group.distinctWords > WORDS_PER_GROUP) {
       const more = document.createElement('span');
       more.className = 'word muted';
-      more.textContent = `+${entries.length - 60}`;
+      more.textContent = `+${(group.distinctWords - WORDS_PER_GROUP).toLocaleString()}`;
       words.append(more);
     }
     card.append(words);
@@ -330,16 +310,6 @@ function renderReview(): void {
   }
 }
 
-function warningsMessage(key: string): string {
-  return lastWarnings.warnings.find((warning) => ruleKey(warning.rule) === key)?.message ?? key;
-}
-
-function scheduleUpdate(): void {
-  cancelAnimationFrame(pending);
-  pending = requestAnimationFrame(update);
-}
-let pending = 0;
-
 input.addEventListener('input', scheduleUpdate);
 protectedTerms.addEventListener('input', scheduleUpdate);
 protectSpans.addEventListener('change', update);
@@ -350,7 +320,7 @@ toSelect.addEventListener('change', () => {
 });
 
 $('swap').addEventListener('click', () => {
-  const currentFrom = resolveSource(input.value);
+  const currentFrom = latest?.source ?? 'old-latin';
   const currentTo = toSelect.value;
   input.value = output.value;
   fromSelect.value = currentTo;
@@ -387,9 +357,11 @@ $('download').addEventListener('click', () => {
 });
 
 $<HTMLInputElement>('file').addEventListener('change', async (event) => {
-  const file = (event.target as HTMLInputElement).files?.[0];
+  const picker = event.target as HTMLInputElement;
+  const file = picker.files?.[0];
   if (!file) return;
   input.value = await file.text();
+  picker.value = '';
   update();
 });
 
@@ -416,3 +388,4 @@ if (savedTo && [...toSelect.options].some((option) => option.value === savedTo))
 }
 if (!input.value) input.value = EXAMPLES.old!;
 applyLanguage();
+update();

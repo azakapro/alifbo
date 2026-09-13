@@ -33,22 +33,26 @@ export function prepareText(text: string): string {
 /**
  * Text paired with the source offset of each UTF-16 code unit. `origins` has one extra
  * trailing entry holding the source end, so `origins[index + length]` is always defined.
+ * `null` means every unit sits at its own index, which avoids allocating an array per
+ * character in the common case where nothing changed length.
  */
 export interface MappedText {
   text: string;
-  origins: number[];
+  origins: number[] | null;
 }
 
-export function identityMapped(text: string, offset = 0): MappedText {
-  return { text, origins: Array.from({ length: text.length + 1 }, (_, index) => offset + index) };
+/** Source offset of `index` in mapped text. */
+export function originAt(origins: readonly number[] | null, index: number): number {
+  return origins === null ? index : origins[index]!;
 }
 
 /** Translate a range in mapped text back to a range in the source text. */
 export function sourceRange(
-  origins: readonly number[],
+  origins: readonly number[] | null,
   index: number,
   length: number,
 ): { index: number; length: number } {
+  if (origins === null) return { index, length };
   const start = origins[index] ?? origins[origins.length - 1]!;
   const end = origins[index + length] ?? origins[origins.length - 1]!;
   return { index: start, length: Math.max(end - start, length > 0 ? 1 : 0) };
@@ -92,8 +96,12 @@ function nfcMapped(text: string): MappedText {
 
 /** `prepareText` with source offsets. Confusable and apostrophe folding are one-to-one. */
 export function prepareTextMapped(text: string): MappedText {
-  const normalized = nfcMapped(text);
   const prepared = prepareText(text);
+  // Already-NFC input (nearly all real text) keeps every position unchanged.
+  if (prepared.length === text.length && text.normalize('NFC') === text) {
+    return { text: prepared, origins: null };
+  }
+  const normalized = nfcMapped(text);
   if (prepared.length !== normalized.text.length) {
     return {
       text: prepared,
