@@ -17,6 +17,7 @@ describe('CLI', () => {
     );
     expect(result.status).toBe(0);
     expect(result.stdout).toBe('şahar');
+    expect(result.stderr).toBe('');
   });
 
   it('converts a file without modifying it', () => {
@@ -34,5 +35,31 @@ describe('CLI', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toBe('Şavkat');
     expect(readFileSync(file, 'utf8')).toBe('Шавкат');
+  });
+
+  it('prints lossy-conversion warnings to stderr without contaminating stdout', () => {
+    const result = spawnSync(
+      process.execPath,
+      ['--import', 'tsx', 'src/cli.ts', 'convert', '--to', 'new-latin'],
+      {
+        cwd: process.cwd(),
+        input: 'Елена',
+        encoding: 'utf8',
+      },
+    );
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe('Yelena');
+    expect(result.stderr).toContain('[cyrillic.e.positional]');
+    expect(result.stderr).toContain('Alternatives: "e", "ye"');
+  });
+
+  it('shows help successfully', () => {
+    const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli.ts', '--help'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('Usage: alifbo convert');
+    expect(result.stderr).toBe('');
   });
 });
