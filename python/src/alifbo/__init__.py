@@ -9,7 +9,7 @@ from .normalize import normalize_apostrophes, normalize_confusables
 from .search import fold_search_key, fold_search_key_loose
 from .types import Alphabet, AlphabetDetection, ConversionResult, Warning
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 __all__ = [
     "Alphabet",
