@@ -1,6 +1,6 @@
 import { firstCase, isUpper, lowerChar, upperText } from './case.js';
 import { applyExceptions, mapSegments, mapSegmentsMapped } from './pipeline.js';
-import { prepareTextMapped, type MappedText } from './normalize.js';
+import { originAt, prepareText, prepareTextMapped } from './normalize.js';
 import type { ConversionOptions, ConversionResult } from './types.js';
 
 // TODO(ng): Change only this value if the authoritative law assigns a new single letter.
@@ -10,20 +10,25 @@ function isPairAt(text: string, index: number, first: string, second: string): b
   return lowerChar(text[index] ?? '') === first && lowerChar(text[index + 1] ?? '') === second;
 }
 
-/** Previous Latin to new Latin, recording the source offset of every output code unit. */
+/**
+ * Previous Latin to new Latin. With `track`, also records the source offset of every output
+ * code unit (needed only to anchor toCyrillic warnings); otherwise `origins` is empty.
+ */
 export function oldLatinCoreMapped(
   text: string,
   options: ConversionOptions = {},
   offset = 0,
-): MappedText {
-  const { text: source, origins } = applyExceptions(prepareTextMapped(text), options);
+  track = true,
+): { text: string; origins: number[] } {
+  const prepared = track ? prepareTextMapped(text) : { text: prepareText(text), origins: null };
+  const { text: source, origins } = applyExceptions(prepared, options);
   let output = '';
   const outputOrigins: number[] = [];
   const emit = (piece: string, sourceIndex: number) => {
     output += piece;
-    for (let unit = 0; unit < piece.length; unit += 1) {
-      outputOrigins.push(offset + origins[sourceIndex]!);
-    }
+    if (!track) return;
+    const origin = offset + originAt(origins, sourceIndex);
+    for (let unit = 0; unit < piece.length; unit += 1) outputOrigins.push(origin);
   };
 
   let index = 0;
@@ -70,9 +75,9 @@ export function oldLatinCoreMapped(
     emit(character, index);
     index += 1;
   }
-  outputOrigins.push(offset + origins[source.length]!);
-
   const normalized = output.normalize('NFC');
+  if (!track) return { text: normalized, origins: outputOrigins };
+  outputOrigins.push(offset + originAt(origins, source.length));
   if (normalized.length !== output.length) {
     const end = outputOrigins[outputOrigins.length - 1]!;
     return {
@@ -86,11 +91,11 @@ export function oldLatinCoreMapped(
 }
 
 export function oldLatinCore(text: string, options: ConversionOptions = {}): string {
-  return oldLatinCoreMapped(text, options).text;
+  return oldLatinCoreMapped(text, options, 0, false).text;
 }
 
 function newLatinCore(text: string, options: ConversionOptions): string {
-  const { text: source } = applyExceptions(prepareTextMapped(text), options);
+  const { text: source } = applyExceptions({ text: prepareText(text), origins: null }, options);
   let output = '';
   for (let index = 0; index < source.length; index += 1) {
     const character = source[index]!;
@@ -118,7 +123,10 @@ function newLatinCore(text: string, options: ConversionOptions): string {
 }
 
 /** Previous Latin to new Latin across protected spans, with offsets into `text`. */
-export function toNewLatinMapped(text: string, options: ConversionOptions = {}): MappedText {
+export function toNewLatinMapped(
+  text: string,
+  options: ConversionOptions = {},
+): { text: string; origins: number[] } {
   return mapSegmentsMapped(text, options, (segment, start) =>
     oldLatinCoreMapped(segment, options, start),
   );
