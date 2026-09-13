@@ -1,11 +1,41 @@
 [
-  { "input": "oʻ gʻ aʻa", "expected": "ö ğ aʼa", "rule": "apostrophe.u02bb", "note": "canonical modifier" },
-  { "input": "oʼ gʼ aʼa", "expected": "ö ğ aʼa", "rule": "apostrophe.u02bc", "note": "canonical tutuq accepted after letters" },
+  {
+    "input": "oʻ gʻ aʻa",
+    "expected": "ö ğ aʼa",
+    "rule": "apostrophe.u02bb",
+    "note": "canonical modifier"
+  },
+  {
+    "input": "oʼ gʼ aʼa",
+    "expected": "ö ğ aʼa",
+    "rule": "apostrophe.u02bc",
+    "note": "canonical tutuq accepted after letters"
+  },
   { "input": "o' g' a'a", "expected": "ö ğ aʼa", "rule": "apostrophe.ascii", "note": "ASCII" },
-  { "input": "o‘ g‘ a‘a", "expected": "ö ğ aʼa", "rule": "apostrophe.left-quote", "note": "U+2018" },
-  { "input": "o’ g’ a’a", "expected": "ö ğ aʼa", "rule": "apostrophe.right-quote", "note": "U+2019" },
-  { "input": "o` g` a`a", "expected": "ö ğ aʼa", "rule": "apostrophe.grave", "note": "U+0060" },
+  {
+    "input": "o‘ g‘ a‘a",
+    "expected": "ö ğ aʼa",
+    "rule": "apostrophe.left-quote",
+    "note": "U+2018"
+  },
+  {
+    "input": "o’ g’ a’a",
+    "expected": "ö ğ aʼa",
+    "rule": "apostrophe.right-quote",
+    "note": "U+2019"
+  },
+  {
+    "input": "o`",
+    "expected": "ö",
+    "rule": "apostrophe.grave",
+    "note": "U+0060; an unmatched grave is not a code span"
+  },
   { "input": "o´ g´ a´a", "expected": "ö ğ aʼa", "rule": "apostrophe.acute", "note": "U+00B4" },
   { "input": "o′ g′ a′a", "expected": "ö ğ aʼa", "rule": "apostrophe.prime", "note": "U+2032" },
-  { "input": "o＇ g＇ a＇a", "expected": "ö ğ aʼa", "rule": "apostrophe.fullwidth", "note": "U+FF07" }
+  {
+    "input": "o＇ g＇ a＇a",
+    "expected": "ö ğ aʼa",
+    "rule": "apostrophe.fullwidth",
+    "note": "U+FF07"
+  }
 ]

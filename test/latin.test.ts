@@ -11,7 +11,38 @@ import {
 describe('Latin conversion properties', () => {
   it('round-trips unambiguous old Latin strings', () => {
     let state = 0x5eed1234;
-    const tokens = ['a', 'b', 'd', 'e', 'f', 'g', 'gʻ', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'ng', 'o', 'oʻ', 'p', 'q', 'r', 's', 'sh', 't', 'u', 'v', 'x', 'y', 'z', 'ch', 'ʼ'];
+    const tokens = [
+      'a',
+      'b',
+      'd',
+      'e',
+      'f',
+      'g',
+      'gʻ',
+      'h',
+      'i',
+      'j',
+      'k',
+      'l',
+      'm',
+      'n',
+      'ng',
+      'o',
+      'oʻ',
+      'p',
+      'q',
+      'r',
+      's',
+      'sh',
+      't',
+      'u',
+      'v',
+      'x',
+      'y',
+      'z',
+      'ch',
+      'ʼ',
+    ];
     for (let sample = 0; sample < 500; sample += 1) {
       let input = '';
       for (let length = 0; length < 24; length += 1) {
@@ -24,6 +55,19 @@ describe('Latin conversion properties', () => {
 
   it('honours custom exceptions longest-first', () => {
     expect(toNewLatin('shahar sh', { exceptions: { sh: 'X', shahar: 'Y' } }).text).toBe('Y X');
+  });
+
+  it('applies custom exceptions in the reverse direction', () => {
+    expect(toOldLatin('şahar', { exceptions: { şahar: 'city' } }).text).toBe('city');
+  });
+
+  it('expands special letters naturally in all-uppercase words', () => {
+    expect(toOldLatin('ŞAHAR ÇÖĞ').text).toBe('SHAHAR CHOʻGʻ');
+    expect(toOldLatin('Şahar').text).toBe('Shahar');
+  });
+
+  it('protects caller-supplied literal terms', () => {
+    expect(toNewLatin('MyShop shahar', { protectedTerms: ['MyShop'] }).text).toBe('MyShop şahar');
   });
 
   it('can disable all span protection', () => {

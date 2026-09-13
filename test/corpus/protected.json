@@ -1,6 +1,26 @@
 [
-  { "input": "https://example.uz/shahar shahar", "expected": "https://example.uz/shahar şahar", "rule": "protected.url", "note": "URL unchanged" },
-  { "input": "sh@example.uz shahar", "expected": "sh@example.uz şahar", "rule": "protected.email", "note": "email unchanged" },
-  { "input": "`const sh = 'ch'` shahar", "expected": "`const sh = 'ch'` şahar", "rule": "protected.code", "note": "code span unchanged" },
-  { "input": "Shakespeare va Photoshop", "expected": "Shakespeare va Photoshop", "rule": "protected.seed-terms", "note": "foreign seed list" }
+  {
+    "input": "https://example.uz/shahar shahar",
+    "expected": "https://example.uz/shahar şahar",
+    "rule": "protected.url",
+    "note": "URL unchanged"
+  },
+  {
+    "input": "sh@example.uz shahar",
+    "expected": "sh@example.uz şahar",
+    "rule": "protected.email",
+    "note": "email unchanged"
+  },
+  {
+    "input": "`const sh = 'ch'` shahar",
+    "expected": "`const sh = 'ch'` şahar",
+    "rule": "protected.code",
+    "note": "code span unchanged"
+  },
+  {
+    "input": "Shakespeare va Photoshop",
+    "expected": "Shakespeare va Photoshop",
+    "rule": "protected.seed-terms",
+    "note": "foreign seed list"
+  }
 ]
