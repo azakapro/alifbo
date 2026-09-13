@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>alifbo — Oʻzbek lotin alifbosi konvertori</title>
+    <meta
+      name="description"
+      content="Convert Uzbek text between Cyrillic, the current Latin alphabet, and the new 2026 Latin alphabet. Runs entirely in your browser."
+    />
+    <meta property="og:title" content="alifbo — Uzbek alphabet converter" />
+    <meta
+      property="og:description"
+      content="oʻ → ö · gʻ → ğ · sh → ş · ch → ç. Convert Cyrillic, old Latin and new Latin Uzbek text in your browser."
+    />
+    <meta property="og:type" content="website" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230A8FB0'/%3E%3Ctext x='50' y='74' font-size='68' font-family='Arial' font-weight='700' text-anchor='middle' fill='white'%3E%C3%B6%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="stripe" aria-hidden="true"><i></i><i></i><i></i></div>
+
+    <header class="wrap top">
+      <a class="brand" href="./"><b>alif</b>bo</a>
+      <nav class="lang" aria-label="Language">
+        <button type="button" data-lang="uz">Oʻzbekcha</button>
+        <button type="button" data-lang="en">English</button>
+      </nav>
+    </header>
+
+    <main class="wrap">
+      <section class="hero">
+        <h1 data-i18n="title"></h1>
+        <p class="sub" data-i18n="subtitle"></p>
+        <ul class="letters" aria-label="Alphabet change">
+          <li><s>oʻ</s><span>ö</span></li>
+          <li><s>gʻ</s><span>ğ</span></li>
+          <li><s>sh</s><span>ş</span></li>
+          <li><s>ch</s><span>ç</span></li>
+        </ul>
+      </section>
+
+      <section class="tool" aria-label="Converter">
+        <div class="bar">
+          <label class="select">
+            <span data-i18n="from"></span>
+            <select id="from">
+              <option value="auto" data-i18n="auto"></option>
+              <option value="cyrillic" data-i18n="cyrillic"></option>
+              <option value="old-latin" data-i18n="oldLatin"></option>
+              <option value="new-latin" data-i18n="newLatin"></option>
+            </select>
+          </label>
+          <button id="swap" class="icon" type="button" data-i18n-title="swap">⇄</button>
+          <label class="select">
+            <span data-i18n="to"></span>
+            <select id="to">
+              <option value="new-latin" data-i18n="newLatin"></option>
+              <option value="old-latin" data-i18n="oldLatin"></option>
+              <option value="cyrillic" data-i18n="cyrillic"></option>
+            </select>
+          </label>
+          <span id="detected" class="detected" aria-live="polite"></span>
+        </div>
+
+        <div class="panes">
+          <div class="pane">
+            <div class="pane-head">
+              <span data-i18n="input"></span>
+              <span class="actions">
+                <label class="btn ghost">
+                  <input id="file" type="file" accept=".txt,.md,.csv,text/plain" hidden />
+                  <span data-i18n="openFile"></span>
+                </label>
+                <button id="clear" class="btn ghost" type="button" data-i18n="clear"></button>
+              </span>
+            </div>
+            <textarea id="input" spellcheck="false" autocomplete="off"></textarea>
+            <div class="pane-foot">
+              <span class="examples"
+                ><span data-i18n="tryExample"></span>
+                <button type="button" class="chip" data-example="old">Oʻzbekiston</button>
+                <button type="button" class="chip" data-example="cyr">Ўзбекистон</button>
+                <button type="button" class="chip" data-example="tutuq">Isʼhoq</button>
+              </span>
+              <span id="inCount" class="count"></span>
+            </div>
+          </div>
+
+          <div class="pane">
+            <div class="pane-head">
+              <span data-i18n="output"></span>
+              <span class="actions">
+                <button id="download" class="btn ghost" type="button" data-i18n="download"></button>
+                <button id="copy" class="btn" type="button" data-i18n="copy"></button>
+              </span>
+            </div>
+            <textarea id="output" readonly spellcheck="false"></textarea>
+            <div class="pane-foot">
+              <span class="privacy" data-i18n="privacy"></span>
+              <span id="outCount" class="count"></span>
+            </div>
+          </div>
+        </div>
+
+        <details class="options">
+          <summary data-i18n="options"></summary>
+          <label class="check">
+            <input id="protectSpans" type="checkbox" checked />
+            <span data-i18n="protectSpans"></span>
+          </label>
+          <label class="field">
+            <span data-i18n="protectedTerms"></span>
+            <input id="protectedTerms" type="text" placeholder="Chevrolet, Shakespeare" />
+          </label>
+        </details>
+      </section>
+
+      <section class="review" aria-live="polite">
+        <div class="review-head">
+          <h2 data-i18n="review"></h2>
+          <span id="reviewCount" class="badge"></span>
+        </div>
+        <p id="reviewEmpty" class="muted" data-i18n="reviewEmpty"></p>
+        <div id="reviewList"></div>
+      </section>
+
+      <section class="dev">
+        <h2 data-i18n="devTitle"></h2>
+        <p data-i18n="devText"></p>
+        <pre><code>npm install alifbo</code></pre>
+        <p>
+          <a href="https://github.com/azakapro/alifbo">GitHub</a> ·
+          <a href="https://www.npmjs.com/package/alifbo">npm</a> ·
+          <a href="https://github.com/azakapro/alifbo/issues/new/choose" data-i18n="report"></a>
+        </p>
+      </section>
+    </main>
+
+    <footer class="wrap foot">
+      <p data-i18n="legal"></p>
+      <p class="muted">MIT · alifbo</p>
+    </footer>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
