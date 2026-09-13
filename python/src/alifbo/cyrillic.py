@@ -100,6 +100,13 @@ def _letter_at(source: str, index: int) -> str:
     return lower_char(character) if unicodedata.category(character)[0] == "L" else ""
 
 
+def _is_latin_letter(character: str) -> bool:
+    """True when ``character`` is a Latin-script letter (JS ``\\p{Script=Latin}`` + ``\\p{L}``)."""
+    if unicodedata.category(character)[0] != "L":
+        return False
+    return unicodedata.name(character, "").startswith("LATIN ")
+
+
 def _case_replacement(source: str, index: int, lower: str) -> str:
     """Case a multi-letter replacement: all caps inside an uppercase word, else title case."""
     character = source[index]
@@ -310,6 +317,19 @@ def _to_cyrillic_core(text: str, offset: int, options: Options) -> Tuple[str, Li
             )
         else:
             replacement = _DIRECT_TO_CYRILLIC.get(lower)
+            if replacement is None and (_is_latin_letter(character) or character == "ʻ"):
+                warnings.append(
+                    _warning(
+                        position,
+                        "latin.unmapped",
+                        (
+                            "Stray ʻ is not part of oʻ or gʻ and has no Cyrillic mapping."
+                            if character == "ʻ"
+                            else f"Latin {character} has no Cyrillic mapping."
+                        ),
+                        (),
+                    )
+                )
 
         if replacement is None:
             output.append(character)
