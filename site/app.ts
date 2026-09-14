@@ -56,6 +56,7 @@ const STRINGS = {
     devText:
       'Bu sahifa ochiq kodli alifbo kutubxonasida ishlaydi: TypeScript, bogʻliqliklarsiz, Node va brauzerda.',
     report: 'Xato haqida xabar berish',
+    madeBy: 'Muallif:',
     legal:
       'Senat yangi alifbo haqidagi qonunni 2026-yil 10-sentabrda maʼqulladi. Rasmiy matn lex.uz saytida eʼlon qilinishi bilan qoidalar yangilanadi. Muhim hujjatlarni har doim tekshirib chiqing.',
   },
@@ -100,6 +101,7 @@ const STRINGS = {
     devText:
       'This page runs on alifbo, an open-source TypeScript library with zero dependencies for Node and the browser.',
     report: 'Report a problem',
+    madeBy: 'Made by',
     legal:
       'Uzbekistan’s Senate approved the new alphabet law on 10 September 2026. Rules will be updated once the official text is published on lex.uz. Always proofread important documents.',
   },
@@ -144,6 +146,7 @@ const STRINGS = {
     devText:
       'Страница работает на открытой библиотеке alifbo: TypeScript без зависимостей, для Node и браузера.',
     report: 'Сообщить об ошибке',
+    madeBy: 'Автор:',
     legal:
       'Сенат Узбекистана одобрил закон о новом алфавите 10 сентября 2026 года. Правила обновятся после публикации официального текста на lex.uz. Всегда проверяйте важные документы.',
   },
