@@ -156,6 +156,14 @@ Ambiguity warnings are written separately to standard error, so redirected outpu
 alifbo: warning [cyrillic.e.positional] at 0:1: ...
 ```
 
+## Author
+
+Built by **Azizullo Temirov**. I share progress on alifbo and other projects here:
+
+[Telegram](https://t.me/azaka_notes) · [YouTube](https://www.youtube.com/@azizullotm) · [Instagram](https://www.instagram.com/azakapro/) · [LinkedIn](https://www.linkedin.com/in/azizullo/)
+
+Found a wrong conversion? [Open an issue](https://github.com/azakapro/alifbo/issues/new/choose) with the exact input and the expected output.
+
 ## Development
 
 ```sh

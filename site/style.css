@@ -471,3 +471,28 @@ textarea[readonly] {
     font-size: 13px;
   }
 }
+.author {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 8px;
+}
+.socials {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.socials a {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-2);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+.socials a:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
