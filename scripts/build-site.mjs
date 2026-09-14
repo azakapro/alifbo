@@ -91,11 +91,10 @@ const unfilled = html.match(/data-i18n="\w+"[^>]*>\s*</g);
 if (unfilled) throw new Error(`Untranslated elements left empty: ${unfilled.join(', ')}`);
 await writeFile(new URL('index.html', pathToFileURL(outdir)), html);
 
-// Link preview image; referenced by absolute URL, so it keeps a fixed name.
-await copyFile(
-  new URL('../site/og.png', import.meta.url),
-  new URL('og.png', pathToFileURL(outdir)),
-);
+// Icons and the link preview image keep fixed names: browser tabs and absolute URLs reference them.
+for (const file of ['og.png', 'favicon.svg', 'apple-touch-icon.png']) {
+  await copyFile(new URL(`../site/${file}`, import.meta.url), new URL(file, pathToFileURL(outdir)));
+}
 
 // Serve files as-is; GitHub Pages would otherwise run Jekyll.
 await writeFile(new URL('.nojekyll', pathToFileURL(outdir)), '');
