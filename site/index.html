@@ -71,6 +71,11 @@
       <symbol id="i-code" viewBox="0 0 24 24">
         <path d="m8.5 7.5-5 4.5 5 4.5m7-9 5 4.5-5 4.5" />
       </symbol>
+      <symbol id="i-info" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 11v5.5M12 7.8v.2" />
+      </symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5" /></symbol>
       <symbol id="i-alert" viewBox="0 0 24 24">
         <path
           d="M12 8.5v4.5m0 3.2v.3M10.3 4.3 3 17a2 2 0 0 0 1.7 3h14.6A2 2 0 0 0 21 17L13.7 4.3a2 2 0 0 0-3.4 0z"
@@ -82,6 +87,17 @@
       <div class="wrap topbar-inner">
         <a class="brand" href="./" aria-label="alifbo"><b>alif</b>bo</a>
         <div class="topbar-actions">
+          <button type="button" class="topbar-button" data-dialog="aboutDialog">
+            <svg class="icon"><use href="#i-info" /></svg><span data-i18n="about"></span>
+          </button>
+          <button
+            type="button"
+            class="icon-button"
+            data-dialog="devDialog"
+            data-i18n-title="devTitle"
+          >
+            <svg class="icon"><use href="#i-code" /></svg>
+          </button>
           <nav class="segmented lang" aria-label="Language">
             <button type="button" data-lang="uz">
               <span class="long">Oʻzbekcha</span><span class="short">UZ</span>
@@ -242,6 +258,16 @@
           </div>
         </div>
 
+        <details id="review" class="review-bar" hidden>
+          <summary>
+            <svg class="icon"><use href="#i-alert" /></svg>
+            <span data-i18n="review"></span>
+            <span id="reviewCount" class="pill warn"></span>
+            <svg class="icon chevron"><use href="#i-chevron" /></svg>
+          </summary>
+          <div id="reviewList" class="review-list"></div>
+        </details>
+
         <div class="converter-foot">
           <p class="privacy">
             <svg class="icon"><use href="#i-lock" /></svg><span data-i18n="privacy"></span>
@@ -261,64 +287,6 @@
           </details>
         </div>
       </section>
-
-      <section class="review" id="review" aria-live="polite">
-        <div class="section-head">
-          <h2 data-i18n="review"></h2>
-          <span id="reviewCount" class="pill warn"></span>
-        </div>
-        <p id="reviewEmpty" class="review-empty">
-          <svg class="icon"><use href="#i-check" /></svg><span data-i18n="reviewEmpty"></span>
-        </p>
-        <div id="reviewList" class="review-list"></div>
-      </section>
-
-      <section class="features" aria-label="Features">
-        <div class="feature">
-          <svg class="icon"><use href="#i-lock" /></svg>
-          <h3 data-i18n="featurePrivateTitle"></h3>
-          <p data-i18n="featurePrivateText"></p>
-        </div>
-        <div class="feature">
-          <svg class="icon"><use href="#i-layout" /></svg>
-          <h3 data-i18n="featureDocTitle"></h3>
-          <p data-i18n="featureDocText"></p>
-        </div>
-        <div class="feature">
-          <svg class="icon"><use href="#i-alert" /></svg>
-          <h3 data-i18n="featureReviewTitle"></h3>
-          <p data-i18n="featureReviewText"></p>
-        </div>
-      </section>
-
-      <section class="developers">
-        <div class="developers-text">
-          <svg class="icon"><use href="#i-code" /></svg>
-          <div>
-            <h2 data-i18n="devTitle"></h2>
-            <p data-i18n="devText"></p>
-          </div>
-        </div>
-        <div class="commands">
-          <button type="button" class="command" data-copy="npm install alifbo">
-            <code>npm install alifbo</code><svg class="icon"><use href="#i-copy" /></svg>
-          </button>
-          <button type="button" class="command" data-copy="pip install alifbo">
-            <code>pip install alifbo</code><svg class="icon"><use href="#i-copy" /></svg>
-          </button>
-        </div>
-        <p class="developers-links">
-          <a href="https://github.com/azakapro/alifbo" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://www.npmjs.com/package/alifbo" target="_blank" rel="noopener">npm</a>
-          <a href="https://pypi.org/project/alifbo/" target="_blank" rel="noopener">PyPI</a>
-          <a
-            href="https://github.com/azakapro/alifbo/issues/new/choose"
-            target="_blank"
-            rel="noopener"
-            data-i18n="report"
-          ></a>
-        </p>
-      </section>
     </main>
 
     <footer class="wrap footer">
@@ -336,6 +304,67 @@
       </div>
       <p class="license">MIT · alifbo</p>
     </footer>
+
+    <dialog id="aboutDialog" class="sheet" aria-labelledby="aboutTitle">
+      <div class="sheet-head">
+        <h2 id="aboutTitle" tabindex="-1" autofocus data-i18n="aboutTitle"></h2>
+        <button type="button" class="icon-button subtle" data-close data-i18n-title="closeFile">
+          <svg class="icon"><use href="#i-close" /></svg>
+        </button>
+      </div>
+      <ul class="about-list">
+        <li>
+          <svg class="icon"><use href="#i-lock" /></svg>
+          <div>
+            <h3 data-i18n="featurePrivateTitle"></h3>
+            <p data-i18n="featurePrivateText"></p>
+          </div>
+        </li>
+        <li>
+          <svg class="icon"><use href="#i-layout" /></svg>
+          <div>
+            <h3 data-i18n="featureDocTitle"></h3>
+            <p data-i18n="featureDocText"></p>
+          </div>
+        </li>
+        <li>
+          <svg class="icon"><use href="#i-alert" /></svg>
+          <div>
+            <h3 data-i18n="featureReviewTitle"></h3>
+            <p data-i18n="featureReviewText"></p>
+          </div>
+        </li>
+      </ul>
+    </dialog>
+
+    <dialog id="devDialog" class="sheet" aria-labelledby="devTitle">
+      <div class="sheet-head">
+        <h2 id="devTitle" tabindex="-1" autofocus data-i18n="devTitle"></h2>
+        <button type="button" class="icon-button subtle" data-close data-i18n-title="closeFile">
+          <svg class="icon"><use href="#i-close" /></svg>
+        </button>
+      </div>
+      <p class="sheet-text" data-i18n="devText"></p>
+      <div class="commands">
+        <button type="button" class="command" data-copy="npm install alifbo">
+          <code>npm install alifbo</code><svg class="icon"><use href="#i-copy" /></svg>
+        </button>
+        <button type="button" class="command" data-copy="pip install alifbo">
+          <code>pip install alifbo</code><svg class="icon"><use href="#i-copy" /></svg>
+        </button>
+      </div>
+      <p class="sheet-links">
+        <a href="https://github.com/azakapro/alifbo" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://www.npmjs.com/package/alifbo" target="_blank" rel="noopener">npm</a>
+        <a href="https://pypi.org/project/alifbo/" target="_blank" rel="noopener">PyPI</a>
+        <a
+          href="https://github.com/azakapro/alifbo/issues/new/choose"
+          target="_blank"
+          rel="noopener"
+          data-i18n="report"
+        ></a>
+      </p>
+    </dialog>
 
     <div id="dropOverlay" class="drop-overlay" hidden>
       <div class="drop-overlay-card">

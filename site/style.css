@@ -807,15 +807,44 @@ textarea.stale {
   color: var(--ink);
 }
 
-/* ---------- Review ---------- */
-.review {
-  margin-top: 36px;
+/* ---------- Review bar ---------- */
+.review-bar {
+  margin-top: 10px;
+  border-radius: var(--radius-md);
+  background: var(--warn-soft);
+  border: 1px solid var(--warn-line);
 }
-.section-head {
+.review-bar summary {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 14px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  border-radius: var(--radius-md);
+}
+.review-bar summary::-webkit-details-marker {
+  display: none;
+}
+.review-bar summary > .icon:first-child {
+  color: var(--warn);
+}
+.review-bar .chevron {
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform 0.2s var(--ease);
+}
+.review-bar[open] .chevron {
+  transform: rotate(180deg);
+}
+.review-list {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px;
 }
 h2 {
   margin: 0;
@@ -827,35 +856,19 @@ h2 {
 h3 {
   margin: 0;
   font-family: var(--display);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 650;
   letter-spacing: -0.01em;
 }
-.review-empty {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
-  color: var(--ink-2);
-}
-.review-empty .icon {
-  color: var(--green);
-}
-.review-list {
-  display: grid;
-  gap: 10px;
-}
 .group {
-  padding: 16px 18px;
-  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
   background: var(--surface);
-  box-shadow: var(--shadow-card);
-  border-left: 3px solid var(--warn-line);
 }
 .group p {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   color: var(--ink-2);
-  font-size: 15px;
+  font-size: 14px;
 }
 .words {
   display: flex;
@@ -863,8 +876,8 @@ h3 {
   gap: 6px;
 }
 .word {
-  padding: 5px 10px;
-  border-radius: var(--radius-sm);
+  padding: 4px 9px;
+  border-radius: 8px;
   background: var(--surface-2);
   font-size: 15px;
   line-height: 1.3;
@@ -884,76 +897,113 @@ h3 {
   color: var(--ink-3);
 }
 .alts {
-  margin-top: 12px;
+  margin-top: 10px;
   color: var(--ink-3);
   font: 12px var(--mono);
 }
 
-/* ---------- Features ---------- */
-.features {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-top: 56px;
+/* ---------- Top bar buttons and panels ---------- */
+.topbar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.15s var(--ease),
+    color 0.15s var(--ease);
 }
-.feature {
-  padding: 20px;
+.topbar-button:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+dialog.sheet {
+  width: min(520px, 100% - 32px);
+  max-height: min(640px, 100% - 48px);
+  margin: auto;
+  padding: 20px 22px 22px;
+  border: 0;
   border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-card);
+  color: var(--ink);
+  box-shadow: var(--shadow-float);
+  overflow-y: auto;
 }
-.feature .icon {
+dialog.sheet[open] {
+  animation: sheet-in 0.22s var(--ease);
+}
+dialog.sheet::backdrop {
+  background: rgb(0 0 0 / 32%);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px -8px 12px 0;
+}
+.sheet-head h2 {
+  font-size: 20px;
+}
+/* Focus starts on the title so screen readers announce it, without a visible ring. */
+.sheet-head h2:focus {
+  outline: none;
+  box-shadow: none;
+}
+.sheet-text {
+  margin: 0 0 16px;
+  color: var(--ink-2);
+  font-size: 15px;
+}
+.about-list {
+  display: grid;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.about-list li {
+  display: flex;
+  gap: 14px;
+}
+.about-list li > .icon {
   width: 22px;
   height: 22px;
-  margin-bottom: 12px;
+  margin-top: 1px;
   color: var(--accent);
 }
-.feature p {
-  margin: 6px 0 0;
+.about-list p {
+  margin: 4px 0 0;
   color: var(--ink-2);
   font-size: 14px;
   line-height: 1.5;
 }
-
-/* ---------- Developers ---------- */
-.developers {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 14px 24px;
-  margin-top: 12px;
-  padding: 20px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--line);
-}
-.developers-text {
-  display: flex;
-  gap: 14px;
-}
-.developers-text > .icon {
-  width: 22px;
-  height: 22px;
-  margin-top: 2px;
-  color: var(--accent);
-}
-.developers h2 {
-  font-size: 17px;
-}
-.developers p {
-  margin: 4px 0 0;
-  color: var(--ink-2);
-  font-size: 14px;
-}
 .commands {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 8px;
 }
 .command {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 12px 0 14px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
@@ -966,23 +1016,21 @@ h3 {
   border-color: var(--line-strong);
 }
 .command code {
-  font: 13px var(--mono);
+  font: 14px var(--mono);
 }
 .command .icon {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
   color: var(--ink-3);
 }
 .command.copied .icon {
   color: var(--green);
 }
-.developers-links {
-  grid-column: 1 / -1;
+.sheet-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 18px;
-  margin: 0;
-  padding-left: 36px;
+  gap: 6px 18px;
+  margin: 16px 0 0;
   font-size: 14px;
   font-weight: 600;
 }
@@ -1091,18 +1139,33 @@ h3 {
     max-height: 45vh;
     font-size: 18px;
   }
-  .features {
-    grid-template-columns: 1fr;
-  }
-  .developers {
-    grid-template-columns: 1fr;
-  }
-  .developers-links {
-    padding-left: 0;
-  }
 }
 
 @media (max-width: 600px) {
+  .topbar-actions {
+    gap: 4px;
+  }
+  .topbar-button span {
+    display: none;
+  }
+  .topbar-button {
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+  dialog.sheet {
+    width: 100%;
+    max-width: 100%;
+    max-height: 85vh;
+    margin: auto 0 0;
+    padding: 18px 18px calc(22px + env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+  }
+  @keyframes sheet-in {
+    from {
+      transform: translateY(40px);
+    }
+  }
   .wrap {
     width: min(1120px, 100% - 24px);
   }
