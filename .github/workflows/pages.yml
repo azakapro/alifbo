@@ -23,6 +23,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run site
+      # Chromium (Chrome/Edge), Firefox and WebKit (Safari) at desktop and phone sizes.
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:browsers
       - uses: actions/upload-pages-artifact@v5
         if: github.event_name != 'pull_request'
         with:
