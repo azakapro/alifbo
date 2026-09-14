@@ -317,6 +317,9 @@ async function openFile(file: File): Promise<void> {
     if (docx) closeDocx();
     requestId += 1;
     docx = { name: file.name, pendingId: requestId, loaded: false };
+    // Reading and unzipping a large document takes a moment; show the same busy state as conversion.
+    status.textContent = t('working');
+    output.classList.add('stale');
     const buffer = await file.arrayBuffer();
     send({ type: 'docx-load', id: docx.pendingId, buffer }, [buffer]);
     return;

@@ -83,7 +83,8 @@ describe('docx conversion', () => {
   });
 
   it('reports review warnings against each span', () => {
-    const doc = readDocx(makeDocx(`<w:p>${run('Елена ')}${run('театр', true)}</w:p>`));
+    // Only rules the page asks people to check count here; ц is one of them, е is not.
+    const doc = readDocx(makeDocx(`<w:p>${run('Цех ')}${run('акция', true)}</w:p>`));
     const result = runDocx(doc, {
       id: 1,
       from: 'auto',
@@ -91,11 +92,11 @@ describe('docx conversion', () => {
       options: {},
     });
     expect(result.source).toBe('cyrillic');
-    expect(result.text).toBe(fromCyrillic('Елена театр').text);
-    expect(result.warningCount).toBe(3);
+    expect(result.text).toBe(fromCyrillic('Цех акция').text);
+    expect(result.warningCount).toBe(2);
     const words = result.groups.flatMap((group) =>
       group.words.map((word) => word.before + word.hit + word.after),
     );
-    expect(words).toEqual(expect.arrayContaining(['Елена', 'театр']));
+    expect(words).toEqual(expect.arrayContaining(['Цех', 'акция']));
   });
 });

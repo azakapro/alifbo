@@ -113,8 +113,8 @@ for (const engineName of selected) {
     check(`${label}: stylesheet applied`, styles.iconFill === 'none', styles);
     check(`${label}: interface text applied`, Boolean(styles.option), styles);
 
-    await page.click('[data-example="cyr"]');
-    // The default example also starts with "Özbekiston", so wait for this example's warnings.
+    // ц is one of the few letters the page asks people to check.
+    await page.fill('#input', 'Акция ва цех: Ўзбекистон шаҳарлари.');
     await page.waitForFunction(
       () => Number(document.getElementById('reviewCount').textContent) > 0,
     );
