@@ -94,3 +94,25 @@ describe('astral characters', () => {
     expect(fromCyrillic('😀 е').text).toBe('😀 ye');
   });
 });
+
+describe('soft sign', () => {
+  it.each([
+    ['батальон', 'batalyon'],
+    ['павильон', 'pavilyon'],
+    ['бульон', 'bulyon'],
+    ['БАТАЛЬОН', 'BATALYON'],
+    ['медаль', 'medal'],
+    ['Ильич', 'Iliç'],
+    ['серьёзно', 'seryozno'],
+    ['ь', ''],
+  ])('converts %s to %s', (cyrillic, latin) => {
+    expect(fromCyrillic(cyrillic).text).toBe(latin);
+  });
+
+  it('explains the glide in the warning', () => {
+    expect(fromCyrillic('бульон').warnings[0]).toMatchObject({
+      rule: 'cyrillic.soft-sign.ambiguous',
+      alternatives: ['y', ''],
+    });
+  });
+});
