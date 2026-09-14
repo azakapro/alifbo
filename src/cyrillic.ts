@@ -69,6 +69,8 @@ const DIRECT_TO_CYRILLIC: Readonly<Record<string, string>> = {
 const CYRILLIC_VOWELS = new Set(['а', 'е', 'ё', 'и', 'о', 'у', 'ў', 'э', 'ю', 'я']);
 
 const LATIN_VOWELS = new Set(['a', 'e', 'i', 'o', 'u', 'ö']);
+// Vowels after which ь becomes a written y; iotated vowels (ё ю я е) already supply it.
+const SOFT_SIGN_GLIDE_VOWELS = new Set(['а', 'о', 'у', 'э', 'ў']);
 
 function warning(
   index: number,
@@ -95,6 +97,7 @@ function toSourceOffsets(
 
 /** The lowercased letter at `index` for positional rules, or '' when it is not a letter. */
 function letterAt(source: string, index: number): string {
+  if (index < 0 || index >= source.length) return '';
   const unit = source.charCodeAt(index);
   const before = index > 0 ? source.charCodeAt(index - 1) : 0;
   if (unit >= 0xdc00 && unit <= 0xdfff && before >= 0xd800 && before <= 0xdbff) {
@@ -175,9 +178,17 @@ function fromCyrillicCore(
         ),
       );
     } else if (lower === 'ь') {
-      replacement = '';
+      // Before a plain vowel the soft sign marks a glide (батальон → batalyon); elsewhere it
+      // has no Latin counterpart and is dropped (медаль → medal).
+      const glide = SOFT_SIGN_GLIDE_VOWELS.has(letterAt(source, index + 1));
+      replacement = glide ? 'y' : '';
       warnings.push(
-        warning(index, 'cyrillic.soft-sign.ambiguous', 'The soft sign was dropped.', ['', 'ʼ']),
+        warning(
+          index,
+          'cyrillic.soft-sign.ambiguous',
+          glide ? 'The soft sign before a vowel was written as y.' : 'The soft sign was dropped.',
+          glide ? ['y', ''] : ['', 'ʼ'],
+        ),
       );
     } else if (lower === 'ё' || lower === 'ю' || lower === 'я') {
       replacement = lower === 'ё' ? 'yo' : lower === 'ю' ? 'yu' : 'ya';

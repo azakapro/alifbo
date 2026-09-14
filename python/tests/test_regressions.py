@@ -127,3 +127,26 @@ def test_astral_exception_key_spans_one_code_point_or_two_code_units() -> None:
     assert [(w.rule, w.index, w.length) for w in internal_e.warnings] == [
         ("latin.e.ambiguous", 0, 2)
     ]
+
+
+@pytest.mark.parametrize(
+    ("cyrillic", "latin"),
+    [
+        ("батальон", "batalyon"),
+        ("павильон", "pavilyon"),
+        ("бульон", "bulyon"),
+        ("БАТАЛЬОН", "BATALYON"),
+        ("медаль", "medal"),
+        ("Ильич", "Iliç"),
+        ("серьёзно", "seryozno"),
+        ("ь", ""),
+    ],
+)
+def test_soft_sign_before_a_vowel_becomes_y(cyrillic: str, latin: str) -> None:
+    assert from_cyrillic(cyrillic).text == latin
+
+
+def test_soft_sign_glide_warning() -> None:
+    warning = from_cyrillic("бульон").warnings[0]
+    assert warning.rule == "cyrillic.soft-sign.ambiguous"
+    assert warning.alternatives == ("y", "")
