@@ -75,6 +75,8 @@ _DIRECT_TO_CYRILLIC = {
 
 _CYRILLIC_VOWELS = frozenset(("а", "е", "ё", "и", "о", "у", "ў", "э", "ю", "я"))
 _LATIN_VOWELS = frozenset(("a", "e", "i", "o", "u", "ö"))
+# Vowels after which ь becomes a written y; iotated vowels (ё ю я е) already supply it.
+_SOFT_SIGN_GLIDE_VOWELS = frozenset(("а", "о", "у", "э", "ў"))
 _IOTATED = {"ё": "yo", "ю": "yu", "я": "ya"}
 _IOTATED_REVERSE = {"yo": "ё", "yu": "ю", "ya": "я"}
 
@@ -96,6 +98,8 @@ def _to_source_offsets(warnings: List[Warning], origins: List[int], offset: int)
 
 def _letter_at(source: str, index: int) -> str:
     """The lowercased letter at ``index`` for positional rules, or '' when it is not a letter."""
+    if index < 0 or index >= len(source):
+        return ""
     character = source[index]
     return lower_char(character) if unicodedata.category(character)[0] == "L" else ""
 
@@ -170,13 +174,18 @@ def _from_cyrillic_core(text: str, offset: int, options: Options) -> Tuple[str, 
                 )
             )
         elif lower == "ь":
-            replacement = ""
+            # Before a plain vowel the soft sign marks a glide (батальон -> batalyon); elsewhere
+            # it has no Latin counterpart and is dropped (сентябрь -> medal).
+            glide = _letter_at(source, index + 1) in _SOFT_SIGN_GLIDE_VOWELS
+            replacement = "y" if glide else ""
             warnings.append(
                 _warning(
                     position,
                     "cyrillic.soft-sign.ambiguous",
-                    "The soft sign was dropped.",
-                    ("", "ʼ"),
+                    "The soft sign before a vowel was written as y."
+                    if glide
+                    else "The soft sign was dropped.",
+                    ("y", "") if glide else ("", "ʼ"),
                 )
             )
         elif lower in _IOTATED:
