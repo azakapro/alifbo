@@ -50,15 +50,35 @@ const STRINGS = {
     protectSpans: 'Havolalar, email manzillar va `kod` qismlarini oʻzgartirmaslik',
     protectedTerms: 'Oʻzgartirilmaydigan soʻzlar (vergul bilan):',
     review: 'Tekshirib chiqing',
-    reviewEmpty: 'Noaniq joylar topilmadi.',
+    reviewEmpty: 'Hammasi aniq: tekshiradigan joy yoʻq.',
     alternatives: 'Boshqa variantlar: ',
     devTitle: 'Dasturchilar uchun',
     devText:
-      'Bu sahifa ochiq kodli alifbo kutubxonasida ishlaydi: TypeScript, bogʻliqliklarsiz, Node va brauzerda.',
+      'Bu sahifa ochiq kodli alifbo kutubxonasida ishlaydi. Uni TypeScript yoki Python loyihangizga ulang.',
     report: 'Xato haqida xabar berish',
     madeBy: 'Muallif:',
     legal:
       'Senat yangi alifbo haqidagi qonunni 2026-yil 10-sentabrda maʼqulladi. Rasmiy matn lex.uz saytida eʼlon qilinishi bilan qoidalar yangilanadi. Muhim hujjatlarni har doim tekshirib chiqing.',
+    eyebrow: 'Yangi alifbo · 2026',
+    tabText: 'Matn',
+    tabDoc: 'Hujjat',
+    dropTitle: 'Word yoki matn faylini shu yerga tashlang',
+    chooseFile: 'Fayl tanlash',
+    themeToDark: 'Tungi rejim',
+    themeToLight: 'Kunduzgi rejim',
+    detCyrillic: 'Kirill',
+    detOldLatin: 'amaldagi lotin',
+    detNewLatin: 'yangi lotin',
+    featurePrivateTitle: 'Fayl yuklanmaydi',
+    featurePrivateText:
+      'Oʻgirish toʻliq brauzeringizda boʻladi. Matn va hujjatlar hech qayerga yuborilmaydi, roʻyxatdan oʻtish shart emas.',
+    featureDocTitle: 'Formatlash saqlanadi',
+    featureDocText:
+      'Word hujjatdagi sarlavha, qalin matn, jadval va kolontitullar oʻz holicha qoladi.',
+    featureReviewTitle: 'Noaniq joylar koʻrsatiladi',
+    featureReviewText:
+      'Kirilldagi е/э yoki ц kabi joylarda dastur taxmin qilmaydi, balki tekshirish uchun alohida koʻrsatadi.',
+    copiedCommand: 'Nusxa olindi',
   },
   en: {
     title: 'Convert Uzbek text to the new Latin alphabet',
@@ -95,15 +115,35 @@ const STRINGS = {
     protectSpans: 'Leave links, email addresses and `code` unchanged',
     protectedTerms: 'Words to leave unchanged (comma-separated):',
     review: 'Review these',
-    reviewEmpty: 'No ambiguous spots found.',
+    reviewEmpty: 'All clear: nothing to review.',
     alternatives: 'Alternatives: ',
     devTitle: 'For developers',
     devText:
-      'This page runs on alifbo, an open-source TypeScript library with zero dependencies for Node and the browser.',
+      'This page runs on alifbo, an open-source library. Use the same engine in your TypeScript or Python project.',
     report: 'Report a problem',
     madeBy: 'Made by',
     legal:
       'Uzbekistan’s Senate approved the new alphabet law on 10 September 2026. Rules will be updated once the official text is published on lex.uz. Always proofread important documents.',
+    eyebrow: 'New alphabet · 2026',
+    tabText: 'Text',
+    tabDoc: 'Document',
+    dropTitle: 'Drop a Word or text file here',
+    chooseFile: 'Choose file',
+    themeToDark: 'Dark mode',
+    themeToLight: 'Light mode',
+    detCyrillic: 'Cyrillic',
+    detOldLatin: 'current Latin',
+    detNewLatin: 'new Latin',
+    featurePrivateTitle: 'Nothing is uploaded',
+    featurePrivateText:
+      'Conversion happens entirely in your browser. Text and documents are never sent anywhere, and there is no sign-up.',
+    featureDocTitle: 'Formatting stays intact',
+    featureDocText:
+      'Headings, bold text, tables, headers and footers in Word documents stay exactly as they were.',
+    featureReviewTitle: 'Uncertain spots are flagged',
+    featureReviewText:
+      'Where Cyrillic is ambiguous, like е/э or ц, alifbo doesn’t guess silently. It lists them for you to check.',
+    copiedCommand: 'Copied',
   },
   ru: {
     title: 'Переводите узбекский текст на новый латинский алфавит',
@@ -140,15 +180,35 @@ const STRINGS = {
     protectSpans: 'Не изменять ссылки, адреса email и `код`',
     protectedTerms: 'Слова, которые не нужно менять (через запятую):',
     review: 'Проверьте',
-    reviewEmpty: 'Спорных мест не найдено.',
+    reviewEmpty: 'Всё однозначно: проверять нечего.',
     alternatives: 'Варианты: ',
     devTitle: 'Для разработчиков',
     devText:
-      'Страница работает на открытой библиотеке alifbo: TypeScript без зависимостей, для Node и браузера.',
+      'Страница работает на открытой библиотеке alifbo. Подключите тот же движок в свой проект на TypeScript или Python.',
     report: 'Сообщить об ошибке',
     madeBy: 'Автор:',
     legal:
       'Сенат Узбекистана одобрил закон о новом алфавите 10 сентября 2026 года. Правила обновятся после публикации официального текста на lex.uz. Всегда проверяйте важные документы.',
+    eyebrow: 'Новый алфавит · 2026',
+    tabText: 'Текст',
+    tabDoc: 'Документ',
+    dropTitle: 'Перетащите сюда файл Word или текстовый файл',
+    chooseFile: 'Выбрать файл',
+    themeToDark: 'Тёмная тема',
+    themeToLight: 'Светлая тема',
+    detCyrillic: 'кириллица',
+    detOldLatin: 'действующая латиница',
+    detNewLatin: 'новая латиница',
+    featurePrivateTitle: 'Файлы не загружаются',
+    featurePrivateText:
+      'Конвертация идёт полностью в браузере. Текст и документы никуда не отправляются, регистрация не нужна.',
+    featureDocTitle: 'Форматирование сохраняется',
+    featureDocText:
+      'Заголовки, жирный текст, таблицы и колонтитулы в документах Word остаются без изменений.',
+    featureReviewTitle: 'Спорные места отмечены',
+    featureReviewText:
+      'Там, где кириллица неоднозначна (е/э, ц), alifbo не угадывает молча, а показывает эти места для проверки.',
+    copiedCommand: 'Скопировано',
   },
 } as const;
 
@@ -222,6 +282,8 @@ const BUSY_DELAY_MS = 150;
 const TEXT_EXTENSIONS = ['.txt', '.md', '.csv', '.srt'];
 const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
+type Mode = 'text' | 'doc';
+type Theme = 'light' | 'dark';
 type Response = ConvertResponse & { bytes?: Uint8Array };
 type WorkerMessage =
   | ({ type: 'result' } & Response)
@@ -229,6 +291,7 @@ type WorkerMessage =
   | { type: 'error'; id: number; message: string };
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const root = document.documentElement;
 const input = $<HTMLTextAreaElement>('input');
 const output = $<HTMLTextAreaElement>('output');
 const fromSelect = $<HTMLSelectElement>('from');
@@ -237,8 +300,16 @@ const detected = $('detected');
 const status = $('status');
 const notice = $('notice');
 const fileBanner = $('fileBanner');
+const dropzone = $('dropzone');
+const dropOverlay = $('dropOverlay');
+const panes = $('panes');
+const converter = $('converter');
+const inputPane = $('inputPane');
+const review = $('review');
 const swapButton = $<HTMLButtonElement>('swap');
+const copyButton = $<HTMLButtonElement>('copy');
 const downloadButton = $<HTMLButtonElement>('download');
+const themeButton = $<HTMLButtonElement>('theme');
 const protectSpans = $<HTMLInputElement>('protectSpans');
 const protectedTerms = $<HTMLInputElement>('protectedTerms');
 const reviewList = $('reviewList');
@@ -246,6 +317,7 @@ const reviewEmpty = $('reviewEmpty');
 const reviewCount = $('reviewCount');
 
 let lang: Lang = initialLanguage();
+let mode: Mode = 'text';
 let latest: Response | undefined;
 let requestId = 0;
 let debounce = 0;
@@ -282,20 +354,56 @@ function t(key: Key): string {
   return STRINGS[lang][key];
 }
 
+// ---------- Theme ----------
+// With no saved choice the page follows the system setting (CSS handles that); the button
+// stores an explicit choice, which the inline script in <head> applies before first paint.
+const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+function resolvedTheme(): Theme {
+  const chosen = root.dataset.theme;
+  if (chosen === 'light' || chosen === 'dark') return chosen;
+  return systemDark.matches ? 'dark' : 'light';
+}
+
+function syncTheme(): void {
+  const theme = resolvedTheme();
+  root.dataset.resolvedTheme = theme;
+  const label = theme === 'dark' ? t('themeToLight') : t('themeToDark');
+  themeButton.title = label;
+  themeButton.setAttribute('aria-label', label);
+  const color = getComputedStyle(root).getPropertyValue('--bg').trim();
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
+}
+
+themeButton.addEventListener('click', () => {
+  const next: Theme = resolvedTheme() === 'dark' ? 'light' : 'dark';
+  root.dataset.theme = next;
+  store('alifbo.theme', next);
+  syncTheme();
+});
+systemDark.addEventListener('change', syncTheme);
+
+// ---------- Language ----------
 function applyLanguage(): void {
-  document.documentElement.lang = lang;
+  root.lang = lang;
   for (const element of document.querySelectorAll<HTMLElement>('[data-i18n]')) {
     element.textContent = t(element.dataset.i18n as Key);
   }
   for (const element of document.querySelectorAll<HTMLElement>('[data-i18n-title]')) {
-    element.title = t(element.dataset.i18nTitle as Key);
+    const label = t(element.dataset.i18nTitle as Key);
+    element.title = label;
+    element.setAttribute('aria-label', label);
   }
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
     button.setAttribute('aria-pressed', String(button.dataset.lang === lang));
   }
   input.placeholder = t('placeholder');
-  downloadButton.textContent = docx ? t('downloadDocx') : t('download');
+  input.setAttribute('aria-label', t('input'));
+  output.setAttribute('aria-label', t('output'));
+  $('copyLabel').textContent = t('copy');
+  $('downloadLabel').textContent = docx ? t('downloadDocx') : t('download');
   if (notice.dataset.key) notice.textContent = t(notice.dataset.key as Key);
+  syncTheme();
   if (latest) render(latest);
 }
 
@@ -313,6 +421,23 @@ function showNotice(key: Key | undefined): void {
   notice.hidden = key === undefined;
 }
 
+/** Grow a text box with its content, within the min and max heights set in CSS. */
+function autosize(area: HTMLTextAreaElement): void {
+  area.style.height = 'auto';
+  area.style.height = `${area.scrollHeight + 2}px`;
+}
+
+function autosizeBoth(): void {
+  // Side-by-side panes share one row, so size both to the taller content.
+  autosize(input);
+  autosize(output);
+  if (window.matchMedia('(min-width: 861px)').matches) {
+    const height = Math.max(input.offsetHeight, output.offsetHeight);
+    input.style.height = output.style.height = `${height}px`;
+  }
+}
+
+// ---------- Conversion ----------
 // Conversion runs in a worker so long documents never freeze typing or scrolling. If workers
 // are unavailable (very old browsers), fall back to converting on the main thread.
 let worker: Worker | undefined;
@@ -352,7 +477,7 @@ function send(request: WorkerRequest, transfer: Transferable[] = []): void {
 
 function update(): void {
   clearTimeout(debounce);
-  if (docx && !docx.loaded) return;
+  if (mode === 'doc' && !docx?.loaded) return;
   requestId += 1;
   const base = {
     id: requestId,
@@ -370,6 +495,7 @@ function update(): void {
 
 function scheduleUpdate(): void {
   clearTimeout(debounce);
+  autosizeBoth();
   debounce = window.setTimeout(update, input.value.length > LARGE_INPUT ? 300 : 0);
 }
 
@@ -381,6 +507,7 @@ function receive(response: Response): void {
   output.classList.remove('stale');
   latest = response;
   if (output.value !== response.text) output.value = response.text;
+  autosizeBoth();
   render(response);
 }
 
@@ -390,7 +517,26 @@ function failed(id: number): void {
   output.classList.remove('stale');
   if (docx && id === docx.pendingId) {
     closeDocx();
+    setMode('doc');
     showNotice('badDocx');
+  }
+}
+
+// ---------- Modes and files ----------
+/** Show the text editor, or the document drop zone until a document is open. */
+function setMode(next: Mode): void {
+  mode = next;
+  for (const tab of document.querySelectorAll<HTMLButtonElement>('[data-mode]')) {
+    tab.setAttribute('aria-selected', String(tab.dataset.mode === mode));
+  }
+  const waitingForFile = mode === 'doc' && !docx;
+  converter.toggleAttribute('data-doc-open', Boolean(docx));
+  dropzone.hidden = !waitingForFile;
+  panes.hidden = waitingForFile;
+  review.hidden = waitingForFile;
+  if (waitingForFile) {
+    detected.textContent = '';
+    status.textContent = '';
   }
 }
 
@@ -398,6 +544,7 @@ async function openFile(file: File): Promise<void> {
   showNotice(undefined);
   const name = file.name.toLowerCase();
   if (name.endsWith('.docx') || file.type === DOCX_TYPE) {
+    if (docx) closeDocx();
     requestId += 1;
     docx = { name: file.name, pendingId: requestId, loaded: false };
     const buffer = await file.arrayBuffer();
@@ -409,7 +556,9 @@ async function openFile(file: File): Promise<void> {
     file.type.startsWith('text/')
   ) {
     if (docx) closeDocx();
+    setMode('text');
     input.value = await file.text();
+    autosizeBoth();
     update();
     return;
   }
@@ -424,7 +573,8 @@ function docxLoaded(id: number, text: string): void {
   swapButton.disabled = true;
   $('fileName').textContent = docx.name;
   fileBanner.hidden = false;
-  downloadButton.textContent = t('downloadDocx');
+  $('downloadLabel').textContent = t('downloadDocx');
+  setMode('doc');
   update();
 }
 
@@ -435,8 +585,17 @@ function closeDocx(): void {
   input.readOnly = false;
   swapButton.disabled = false;
   fileBanner.hidden = true;
-  downloadButton.textContent = t('download');
+  $('downloadLabel').textContent = t('download');
   input.value = '';
+  output.value = '';
+  latest = undefined;
+}
+
+// ---------- Rendering ----------
+function sourceName(source: Source): string {
+  return t(
+    source === 'cyrillic' ? 'detCyrillic' : source === 'new-latin' ? 'detNewLatin' : 'detOldLatin',
+  );
 }
 
 function render(response: Response): void {
@@ -446,12 +605,8 @@ function render(response: Response): void {
   $('outCount').textContent = response.outputChars
     ? `${response.outputChars.toLocaleString()} ${t('chars')}`
     : '';
-  const source = response.source;
   detected.textContent =
-    fromSelect.value === 'auto' && response.inputChars > 0
-      ? t('detected') +
-        t(source === 'cyrillic' ? 'cyrillic' : source === 'new-latin' ? 'newLatin' : 'oldLatin')
-      : '';
+    fromSelect.value === 'auto' && response.inputChars > 0 ? sourceName(response.source) : '';
 
   reviewList.replaceChildren();
   reviewEmpty.hidden = response.warningCount > 0 || response.inputChars === 0;
@@ -498,6 +653,7 @@ function render(response: Response): void {
   }
 }
 
+// ---------- Events ----------
 input.addEventListener('input', scheduleUpdate);
 protectedTerms.addEventListener('input', scheduleUpdate);
 protectSpans.addEventListener('change', update);
@@ -506,6 +662,25 @@ toSelect.addEventListener('change', () => {
   store('alifbo.to', toSelect.value);
   update();
 });
+window.addEventListener('resize', autosizeBoth);
+
+for (const tab of document.querySelectorAll<HTMLButtonElement>('[data-mode]')) {
+  tab.addEventListener('click', () => {
+    const next = tab.dataset.mode === 'doc' ? 'doc' : 'text';
+    if (next === mode) return;
+    showNotice(undefined);
+    if (next === 'text' && docx) {
+      closeDocx();
+      input.value = '';
+    }
+    setMode(next);
+    if (next === 'text') {
+      autosizeBoth();
+      update();
+      input.focus();
+    }
+  });
+}
 
 swapButton.addEventListener('click', () => {
   const currentFrom = latest?.source ?? 'old-latin';
@@ -514,34 +689,54 @@ swapButton.addEventListener('click', () => {
   fromSelect.value = currentTo;
   toSelect.value = currentFrom;
   store('alifbo.to', toSelect.value);
+  autosizeBoth();
   update();
 });
 
 $('clear').addEventListener('click', () => {
-  closeDocx();
   showNotice(undefined);
   input.value = '';
+  autosizeBoth();
   update();
   input.focus();
 });
 
 $('closeFile').addEventListener('click', () => {
   closeDocx();
-  update();
-  input.focus();
+  setMode('doc');
 });
 
-const copyButton = $<HTMLButtonElement>('copy');
-copyButton.addEventListener('click', async () => {
+async function copyText(text: string): Promise<void> {
   try {
-    await navigator.clipboard.writeText(output.value);
+    await navigator.clipboard.writeText(text);
   } catch {
-    output.select();
+    const area = document.createElement('textarea');
+    area.value = text;
+    document.body.append(area);
+    area.select();
     document.execCommand('copy');
+    area.remove();
   }
-  copyButton.textContent = t('copied');
-  setTimeout(() => (copyButton.textContent = t('copy')), 1500);
+}
+
+copyButton.addEventListener('click', async () => {
+  await copyText(output.value);
+  copyButton.classList.add('copied');
+  $('copyLabel').textContent = t('copied');
+  setTimeout(() => {
+    copyButton.classList.remove('copied');
+    $('copyLabel').textContent = t('copy');
+  }, 1600);
 });
+
+for (const command of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
+  command.addEventListener('click', async () => {
+    await copyText(command.dataset.copy ?? '');
+    command.classList.add('copied');
+    command.title = t('copiedCommand');
+    setTimeout(() => command.classList.remove('copied'), 1600);
+  });
+}
 
 function save(blob: Blob, filename: string): void {
   const link = document.createElement('a');
@@ -566,20 +761,34 @@ downloadButton.addEventListener('click', () => {
   );
 });
 
-$<HTMLInputElement>('file').addEventListener('change', async (event) => {
-  const picker = event.target as HTMLInputElement;
-  const file = picker.files?.[0];
-  picker.value = '';
-  if (file) await openFile(file);
-});
+for (const picker of document.querySelectorAll<HTMLInputElement>('.file-input')) {
+  picker.addEventListener('change', async () => {
+    const file = picker.files?.[0];
+    picker.value = '';
+    if (file) await openFile(file);
+  });
+}
 
-input.addEventListener('dragover', (event) => {
-  event.preventDefault();
-  input.classList.add('dropping');
+// Files can be dropped anywhere on the page; an overlay confirms the drop target.
+let dragDepth = 0;
+const hasFiles = (event: DragEvent) => [...(event.dataTransfer?.types ?? [])].includes('Files');
+window.addEventListener('dragenter', (event) => {
+  if (!hasFiles(event)) return;
+  dragDepth += 1;
+  dropOverlay.hidden = false;
 });
-input.addEventListener('dragleave', () => input.classList.remove('dropping'));
-input.addEventListener('drop', async (event) => {
-  input.classList.remove('dropping');
+window.addEventListener('dragover', (event) => {
+  if (hasFiles(event)) event.preventDefault();
+});
+window.addEventListener('dragleave', (event) => {
+  if (!hasFiles(event)) return;
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (dragDepth === 0) dropOverlay.hidden = true;
+});
+window.addEventListener('drop', async (event) => {
+  dragDepth = 0;
+  dropOverlay.hidden = true;
+  inputPane.classList.remove('dropping');
   const file = event.dataTransfer?.files[0];
   if (!file) return;
   event.preventDefault();
@@ -588,10 +797,12 @@ input.addEventListener('drop', async (event) => {
 
 for (const chip of document.querySelectorAll<HTMLButtonElement>('[data-example]')) {
   chip.addEventListener('click', () => {
-    closeDocx();
+    if (docx) closeDocx();
     showNotice(undefined);
+    setMode('text');
     input.value = EXAMPLES[chip.dataset.example!] ?? '';
     fromSelect.value = 'auto';
+    autosizeBoth();
     update();
   });
 }
@@ -612,5 +823,7 @@ if (savedTo && [...toSelect.options].some((option) => option.value === savedTo))
   toSelect.value = savedTo;
 }
 if (!input.value) input.value = EXAMPLES.old!;
+setMode('text');
 applyLanguage();
+autosizeBoth();
 update();
