@@ -116,4 +116,33 @@ describe('lossy Cyrillic conversion', () => {
     expect(fromCyrillic('`Шавкат` Шавкат').text).toBe('`Шавкат` Şavkat');
     expect(toCyrillic('https://example.uz/sh Şavkat').text).toBe('https://example.uz/sh Шавкат');
   });
+
+  it('warns when a Latin letter or stray ʻ has no Cyrillic mapping', () => {
+    const result = toCyrillic('tongʻ w');
+    expect(result.text).toBe('тонгʻ w');
+    expect(result.warnings).toHaveLength(2);
+    expect(result.warnings.map((warning) => warning.rule)).toEqual([
+      'latin.unmapped',
+      'latin.unmapped',
+    ]);
+    expect(result.warnings.every((warning) => (warning.alternatives?.length ?? 0) === 0)).toBe(
+      true,
+    );
+  });
+
+  it('does not emit latin.unmapped for mapped letters or non-letters', () => {
+    const result = toCyrillic('ton 12.');
+    expect(result.text).toBe('тон 12.');
+    expect(result.warnings.filter((warning) => warning.rule === 'latin.unmapped')).toHaveLength(0);
+  });
+
+  it('warns for fullwidth Ａ and feminine ordinal ª', () => {
+    expect(toCyrillic('Ａ').warnings.map((warning) => warning.rule)).toContain('latin.unmapped');
+    expect(toCyrillic('ª').warnings.map((warning) => warning.rule)).toContain('latin.unmapped');
+  });
+
+  it('does not warn for IPA ɐ', () => {
+    const result = toCyrillic('ɐ');
+    expect(result.warnings.filter((warning) => warning.rule === 'latin.unmapped')).toHaveLength(0);
+  });
 });
