@@ -6,6 +6,9 @@ export const LANGS: readonly Lang[] = ['uz', 'en', 'ru'];
 
 export const STRINGS = {
   uz: {
+    featureStatsTitle: 'Faqat anonim statistika',
+    featureStatsText:
+      'Tashriflar va qaysi funksiyalar ishlatilgani soni hisoblanadi. Matn, fayl nomi va mazmuni hech qachon yuborilmaydi, cookie ishlatilmaydi. Brauzerda «Do Not Track» yoqilgan boʻlsa, hisoblanmaydi.',
     about: 'Haqida',
     aboutTitle: 'alifbo haqida',
     title: 'Oʻzbek matnini yangi lotin alifbosiga oʻgiring',
@@ -74,6 +77,9 @@ export const STRINGS = {
     copiedCommand: 'Nusxa olindi',
   },
   en: {
+    featureStatsTitle: 'Anonymous counts only',
+    featureStatsText:
+      'We count visits and which features are used. Text, file names and file contents are never sent, and no cookies are used. Browsers with “Do Not Track” turned on are not counted.',
     about: 'About',
     aboutTitle: 'About alifbo',
     title: 'Convert Uzbek text to the new Latin alphabet',
@@ -141,6 +147,9 @@ export const STRINGS = {
     copiedCommand: 'Copied',
   },
   ru: {
+    featureStatsTitle: 'Только анонимная статистика',
+    featureStatsText:
+      'Считаются посещения и то, какие функции используются. Текст, названия и содержимое файлов никогда не отправляются, cookie не используются. Если в браузере включён «Do Not Track», посещение не учитывается.',
     about: 'О сервисе',
     aboutTitle: 'Об alifbo',
     title: 'Переводите узбекский текст на новый латинский алфавит',

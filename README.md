@@ -7,6 +7,7 @@
 `alifbo` is a zero-runtime-dependency TypeScript library for converting Uzbek text between Cyrillic, the previous Latin alphabet, and the Latin alphabet approved by Uzbekistan's Senate in September 2026. It is designed to expose uncertainty instead of hiding it.
 
 **Try it in your browser:** [azakapro.github.io/alifbo](https://azakapro.github.io/alifbo/) (no install; your text never leaves the page).
+The demo counts anonymous visits and feature use with [GoatCounter](https://www.goatcounter.com) (no cookies, no IP addresses, and never any text or file names; Do Not Track is respected). The npm and Python libraries send nothing.
 
 The package works in Node 20+ and browsers, and publishes ESM, CommonJS, and TypeScript declarations. The core API is pure: it performs no I/O, network access, or environment inspection.
 

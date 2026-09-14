@@ -10,6 +10,7 @@ import {
 } from './engine.js';
 import type { WorkerRequest } from './worker.js';
 
+import { sizeBucket, trackEvent, trackVisit } from './analytics.js';
 import { LANGS, RULES, STRINGS, type Key, type Lang } from './i18n.js';
 
 // Hashed worker file name, injected by scripts/build-site.mjs.
@@ -125,6 +126,7 @@ themeButton.addEventListener('click', () => {
   root.dataset.theme = next;
   store('alifbo.theme', next);
   syncTheme();
+  trackEvent(`theme/${next}`);
 });
 systemDark.addEventListener('change', syncTheme);
 
@@ -139,31 +141,6 @@ function applyLanguage(): void {
     element.title = label;
     element.setAttribute('aria-label', label);
   }
-  // ---------- Panels ----------
-  for (const trigger of document.querySelectorAll<HTMLButtonElement>('[data-dialog]')) {
-    trigger.addEventListener('click', () => {
-      const dialog = document.getElementById(
-        trigger.dataset.dialog ?? '',
-      ) as HTMLDialogElement | null;
-      dialog?.showModal();
-    });
-  }
-  for (const dialog of document.querySelectorAll<HTMLDialogElement>('dialog.sheet')) {
-    // A click on the backdrop lands on the dialog element itself, outside its content box.
-    dialog.addEventListener('click', (event) => {
-      const box = dialog.getBoundingClientRect();
-      const outside =
-        event.clientX < box.left ||
-        event.clientX > box.right ||
-        event.clientY < box.top ||
-        event.clientY > box.bottom;
-      if (event.target === dialog && outside) dialog.close();
-    });
-    for (const close of dialog.querySelectorAll<HTMLButtonElement>('[data-close]')) {
-      close.addEventListener('click', () => dialog.close());
-    }
-  }
-
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
     button.setAttribute('aria-pressed', String(button.dataset.lang === lang));
   }
@@ -289,6 +266,7 @@ function failed(id: number): void {
     closeDocx();
     setMode('doc');
     showNotice('badDocx');
+    trackEvent('docx-error');
   }
 }
 
@@ -317,6 +295,7 @@ async function openFile(file: File): Promise<void> {
     if (docx) closeDocx();
     requestId += 1;
     docx = { name: file.name, pendingId: requestId, loaded: false };
+    trackEvent(`docx-open/${sizeBucket(file.size)}`);
     // Reading and unzipping a large document takes a moment; show the same busy state as conversion.
     status.textContent = t('working');
     output.classList.add('stale');
@@ -329,6 +308,7 @@ async function openFile(file: File): Promise<void> {
     file.type.startsWith('text/')
   ) {
     if (docx) closeDocx();
+    trackEvent(`text-file-open/${sizeBucket(file.size)}`);
     setMode('text');
     input.value = await file.text();
     autosizeBoth();
@@ -336,6 +316,7 @@ async function openFile(file: File): Promise<void> {
     return;
   }
   showNotice('unsupported');
+  trackEvent('file-unsupported');
 }
 
 function docxLoaded(id: number, text: string): void {
@@ -428,8 +409,37 @@ function render(response: Response): void {
   }
 }
 
+// ---------- Panels ----------
+for (const trigger of document.querySelectorAll<HTMLButtonElement>('[data-dialog]')) {
+  trigger.addEventListener('click', () => {
+    const dialog = document.getElementById(
+      trigger.dataset.dialog ?? '',
+    ) as HTMLDialogElement | null;
+    if (dialog && !dialog.open) dialog.showModal();
+    trackEvent(`panel/${trigger.dataset.dialog}`);
+  });
+}
+for (const dialog of document.querySelectorAll<HTMLDialogElement>('dialog.sheet')) {
+  // A click on the backdrop lands on the dialog element itself, outside its content box.
+  dialog.addEventListener('click', (event) => {
+    const box = dialog.getBoundingClientRect();
+    const outside =
+      event.clientX < box.left ||
+      event.clientX > box.right ||
+      event.clientY < box.top ||
+      event.clientY > box.bottom;
+    if (event.target === dialog && outside) dialog.close();
+  });
+  for (const close of dialog.querySelectorAll<HTMLButtonElement>('[data-close]')) {
+    close.addEventListener('click', () => dialog.close());
+  }
+}
+
 // ---------- Events ----------
-input.addEventListener('input', scheduleUpdate);
+input.addEventListener('input', () => {
+  trackEvent('text-typed');
+  scheduleUpdate();
+});
 protectedTerms.addEventListener('input', scheduleUpdate);
 protectSpans.addEventListener('change', update);
 fromSelect.addEventListener('change', update);
@@ -466,6 +476,7 @@ swapButton.addEventListener('click', () => {
   store('alifbo.to', toSelect.value);
   autosizeBoth();
   update();
+  trackEvent('swap');
 });
 
 $('clear').addEventListener('click', () => {
@@ -496,6 +507,7 @@ async function copyText(text: string): Promise<void> {
 
 copyButton.addEventListener('click', async () => {
   await copyText(output.value);
+  trackEvent(docx ? 'copy/docx' : 'copy/text');
   copyButton.classList.add('copied');
   $('copyLabel').textContent = t('copied');
   setTimeout(() => {
@@ -507,6 +519,7 @@ copyButton.addEventListener('click', async () => {
 for (const command of document.querySelectorAll<HTMLButtonElement>('[data-copy]')) {
   command.addEventListener('click', async () => {
     await copyText(command.dataset.copy ?? '');
+    trackEvent(`install-copy/${(command.dataset.copy ?? '').split(' ')[0]}`);
     command.classList.add('copied');
     command.title = t('copiedCommand');
     setTimeout(() => command.classList.remove('copied'), 1600);
@@ -522,6 +535,9 @@ function save(blob: Blob, filename: string): void {
 }
 
 downloadButton.addEventListener('click', () => {
+  trackEvent(
+    `download/${docx ? 'docx' : 'text'}/${latest?.source ?? 'unknown'}-to-${toSelect.value}`,
+  );
   if (docx && latest?.bytes) {
     const base = docx.name.replace(/\.docx$/i, '');
     save(
@@ -576,6 +592,7 @@ for (const chip of document.querySelectorAll<HTMLButtonElement>('[data-example]'
     showNotice(undefined);
     setMode('text');
     input.value = EXAMPLES[chip.dataset.example!] ?? '';
+    trackEvent(`example/${chip.dataset.example}`);
     fromSelect.value = 'auto';
     autosizeBoth();
     update();
@@ -589,6 +606,7 @@ for (const button of document.querySelectorAll<HTMLButtonElement>('[data-lang]')
       : 'uz';
     store('alifbo.lang', lang);
     applyLanguage();
+    trackEvent(`language/${lang}`);
   });
 }
 
@@ -602,3 +620,8 @@ setMode('text');
 applyLanguage();
 autosizeBoth();
 update();
+
+review.addEventListener('toggle', () => {
+  if (review.open) trackEvent('review-open');
+});
+trackVisit();
