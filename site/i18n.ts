@@ -6,6 +6,8 @@ export const LANGS: readonly Lang[] = ['uz', 'en', 'ru'];
 
 export const STRINGS = {
   uz: {
+    about: 'Haqida',
+    aboutTitle: 'alifbo haqida',
     title: 'Oʻzbek matnini yangi lotin alifbosiga oʻgiring',
     subtitle:
       'Kirill, amaldagi lotin va 2026-yilgi yangi lotin alifbolari oʻrtasida. Noaniq joylarni koʻrsatib beradi.',
@@ -72,6 +74,8 @@ export const STRINGS = {
     copiedCommand: 'Nusxa olindi',
   },
   en: {
+    about: 'About',
+    aboutTitle: 'About alifbo',
     title: 'Convert Uzbek text to the new Latin alphabet',
     subtitle:
       'Between Cyrillic, the current Latin alphabet and the new 2026 Latin alphabet. Ambiguous spots are flagged for review.',
@@ -137,6 +141,8 @@ export const STRINGS = {
     copiedCommand: 'Copied',
   },
   ru: {
+    about: 'О сервисе',
+    aboutTitle: 'Об alifbo',
     title: 'Переводите узбекский текст на новый латинский алфавит',
     subtitle:
       'Между кириллицей, действующей латиницей и новой латиницей 2026 года. Спорные места отмечаются для проверки.',

@@ -51,7 +51,7 @@ const dropOverlay = $('dropOverlay');
 const panes = $('panes');
 const converter = $('converter');
 const inputPane = $('inputPane');
-const review = $('review');
+const review = $<HTMLDetailsElement>('review');
 const swapButton = $<HTMLButtonElement>('swap');
 const copyButton = $<HTMLButtonElement>('copy');
 const downloadButton = $<HTMLButtonElement>('download');
@@ -59,7 +59,6 @@ const themeButton = $<HTMLButtonElement>('theme');
 const protectSpans = $<HTMLInputElement>('protectSpans');
 const protectedTerms = $<HTMLInputElement>('protectedTerms');
 const reviewList = $('reviewList');
-const reviewEmpty = $('reviewEmpty');
 const reviewCount = $('reviewCount');
 
 let lang: Lang = initialLanguage();
@@ -140,6 +139,31 @@ function applyLanguage(): void {
     element.title = label;
     element.setAttribute('aria-label', label);
   }
+  // ---------- Panels ----------
+  for (const trigger of document.querySelectorAll<HTMLButtonElement>('[data-dialog]')) {
+    trigger.addEventListener('click', () => {
+      const dialog = document.getElementById(
+        trigger.dataset.dialog ?? '',
+      ) as HTMLDialogElement | null;
+      dialog?.showModal();
+    });
+  }
+  for (const dialog of document.querySelectorAll<HTMLDialogElement>('dialog.sheet')) {
+    // A click on the backdrop lands on the dialog element itself, outside its content box.
+    dialog.addEventListener('click', (event) => {
+      const box = dialog.getBoundingClientRect();
+      const outside =
+        event.clientX < box.left ||
+        event.clientX > box.right ||
+        event.clientY < box.top ||
+        event.clientY > box.bottom;
+      if (event.target === dialog && outside) dialog.close();
+    });
+    for (const close of dialog.querySelectorAll<HTMLButtonElement>('[data-close]')) {
+      close.addEventListener('click', () => dialog.close());
+    }
+  }
+
   for (const button of document.querySelectorAll<HTMLButtonElement>('[data-lang]')) {
     button.setAttribute('aria-pressed', String(button.dataset.lang === lang));
   }
@@ -279,7 +303,7 @@ function setMode(next: Mode): void {
   converter.toggleAttribute('data-doc-open', Boolean(docx));
   dropzone.hidden = !waitingForFile;
   panes.hidden = waitingForFile;
-  review.hidden = waitingForFile;
+  if (waitingForFile) review.hidden = true;
   if (waitingForFile) {
     detected.textContent = '';
     status.textContent = '';
@@ -355,7 +379,9 @@ function render(response: Response): void {
     fromSelect.value === 'auto' && response.inputChars > 0 ? sourceName(response.source) : '';
 
   reviewList.replaceChildren();
-  reviewEmpty.hidden = response.warningCount > 0 || response.inputChars === 0;
+  // The review bar only appears when there is something to check.
+  review.hidden = response.warningCount === 0 || (mode === 'doc' && !docx);
+  if (review.hidden) review.open = false;
   reviewCount.textContent = response.warningCount ? response.warningCount.toLocaleString() : '';
 
   for (const group of response.groups) {

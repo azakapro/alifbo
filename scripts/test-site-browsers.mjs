@@ -114,11 +114,22 @@ for (const engineName of selected) {
     check(`${label}: interface text applied`, Boolean(styles.option), styles);
 
     await page.click('[data-example="cyr"]');
-    await page.waitForFunction(() =>
-      document.getElementById('output').value.startsWith('Özbekiston'),
+    // The default example also starts with "Özbekiston", so wait for this example's warnings.
+    await page.waitForFunction(
+      () => Number(document.getElementById('reviewCount').textContent) > 0,
     );
     const review = await page.textContent('#reviewCount');
-    check(`${label}: review panel lists warnings`, Number(review) > 0, review);
+    check(`${label}: review bar shows a count`, Number(review) > 0, review);
+    await page.click('#review summary');
+    check(`${label}: review bar expands`, await page.isVisible('#reviewList .group'));
+
+    for (const dialog of ['aboutDialog', 'devDialog']) {
+      await page.click(`[data-dialog="${dialog}"]`);
+      check(`${label}: ${dialog} opens`, await page.isVisible(`#${dialog}`));
+      await page.keyboard.press('Escape');
+      await page.waitForTimeout(100);
+      check(`${label}: ${dialog} closes with Escape`, !(await page.isVisible(`#${dialog}`)));
+    }
 
     const theme = async () =>
       page.evaluate(() =>
