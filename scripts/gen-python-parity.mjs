@@ -163,6 +163,25 @@ add([
   '',
 ]);
 
+// Foreign words and names inside Uzbek text (kept as written by default since 0.5.0).
+section = 'foreign';
+add([
+  'Toshkent hokimligi Microsoft Windows va Wi-Fi tizimiga oʻtdi. Zürich shahri, tongʻ.',
+  "iPhone SiO2 ChatGPT YouTube McDonald's Coca-Cola",
+  'Windowsda Telegramga Wi-Fi-ga COVID-19 5G',
+  'Toshkent-Samarqand 2026-yil Oʻzbekiston-Qozogʻiston',
+  'Michael Chelsea Chevrolet Google Zoom Steel',
+  'Isʼhoq Windows oʻzbek w W c C ch Ch',
+  'wallet-w Ünal-ü Ada-Ç ada-c',
+  'x-W W-x 😀Windows Windows😀 𝐖indows Wind𝐨ws',
+  'https://example.uz/Windows Windows',
+  'Photoshop Windowsshop Shakespeare-Windows',
+  'MyShop myShop Ozbek oZbek OʻZBEKISTON Oʻzbekiston',
+  'ashob-Windows Windows-ashob ashob Windows',
+  "'Windows' “Windows” Windows's Windows'",
+  'w\u0301indows u\u0308 Zu\u0308rich ș Ș șalom Windowș',
+]);
+
 const cyrillicPairs = [
   ['а', 'А'],
   ['б', 'Б'],
@@ -328,6 +347,8 @@ const optionVariants = [
     protectedTerms: ['Photoshop'],
     exceptions: { Toshkent: 'Tashkent', tong: 'ong' },
   },
+  { foreignWords: 'transliterate' },
+  { foreignWords: 'keep', protectedTerms: ['Windows'], exceptions: { Windows: 'Oynalar' } },
 ];
 
 const conversions = ['toNewLatin', 'toOldLatin', 'fromCyrillic', 'toCyrillic'];
@@ -353,7 +374,7 @@ for (const input of inputs) {
   for (const fn of plain) run(fn, input);
 }
 
-const optionSections = new Set(['corpus', 'tricky']);
+const optionSections = new Set(['corpus', 'tricky', 'foreign']);
 const optionInputs = inputs.filter(
   (input, index) => optionSections.has(sectionOf.get(input)) || index % 4 === 0,
 );

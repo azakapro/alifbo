@@ -3,10 +3,12 @@ import { readFileSync } from 'node:fs';
 import { fromCyrillic, toCyrillic, toNewLatin, toOldLatin } from './index.js';
 import type { ConversionResult, Warning } from './index.js';
 
-const USAGE = `Usage: alifbo convert --to <new-latin|old-latin|cyrillic> [file]
+const USAGE = `Usage: alifbo convert --to <new-latin|old-latin|cyrillic> [--foreign-words <keep|transliterate>] [file]
 
 Reads standard input when no file is provided. Converted text is written to
 standard output and ambiguity warnings are written to standard error.
+--foreign-words applies to Cyrillic output: keep (default) leaves words with
+non-Uzbek letters such as "Windows" as written; transliterate converts them.
 `;
 
 function usage(exitCode: number): never {
@@ -29,9 +31,12 @@ const toIndex = arguments_.indexOf('--to');
 const target = arguments_[toIndex + 1];
 if (toIndex < 0 || target === undefined) usage(2);
 if (target !== 'new-latin' && target !== 'old-latin' && target !== 'cyrillic') usage(2);
+const foreignIndex = arguments_.indexOf('--foreign-words');
+const foreignWords = foreignIndex < 0 ? 'keep' : arguments_[foreignIndex + 1];
+if (foreignWords !== 'keep' && foreignWords !== 'transliterate') usage(2);
+const consumed = new Set([0, toIndex, toIndex + 1, foreignIndex, foreignIndex + 1]);
 const file = arguments_.find(
-  (argument, index) =>
-    index > 0 && index !== toIndex && index !== toIndex + 1 && !argument.startsWith('-'),
+  (argument, index) => !consumed.has(index) && !argument.startsWith('-'),
 );
 const input = file === undefined ? readFileSync(0, 'utf8') : readFileSync(file, 'utf8');
 
@@ -41,7 +46,7 @@ if (target === 'new-latin' || target === 'old-latin') {
   const converted =
     target === 'new-latin' ? toNewLatin(intermediate.text) : toOldLatin(intermediate.text);
   result = { text: converted.text, warnings: [...intermediate.warnings, ...converted.warnings] };
-} else result = toCyrillic(input);
+} else result = toCyrillic(input, { foreignWords });
 
 process.stdout.write(result.text);
 for (const item of result.warnings) printWarning(item);

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import re
 import unicodedata
 
 import pytest
@@ -113,12 +114,85 @@ def test_protected_spans_in_either_direction():
 
 
 def test_fullwidth_and_ordinal_latin_warn_unmapped():
-    assert any(warning.rule == "latin.unmapped" for warning in to_cyrillic("Ａ").warnings)
-    assert any(warning.rule == "latin.unmapped" for warning in to_cyrillic("ª").warnings)
+    def rules(text: str):
+        return [w.rule for w in to_cyrillic(text, foreign_words="transliterate").warnings]
+
+    assert "latin.unmapped" in rules("Ａ")
+    assert "latin.unmapped" in rules("ª")
+    # By default such letters make the whole word foreign instead.
+    assert [w.rule for w in to_cyrillic("Ａ").warnings] == ["latin.foreign"]
 
 
 def test_ipa_turned_a_does_not_warn_unmapped():
-    assert all(warning.rule != "latin.unmapped" for warning in to_cyrillic("ɐ").warnings)
+    warnings = to_cyrillic("ɐ", foreign_words="transliterate").warnings
+    assert all(warning.rule != "latin.unmapped" for warning in warnings)
+
+
+MIXED_SENTENCES = [
+    "Toshkent hokimligi Microsoft Windows va Wi-Fi tizimiga oʻtdi. Zürich shahri, tongʻ.",
+    "Yigʻilish Zoom va Google Meet orqali, hujjatlar Microsoft Word formatida.",
+    "iPhone 15, Samsung Galaxy S24 va Xiaomi telefonlari sotuvda.",
+    "Hisobot COVID-19 pandemiyasi davrida SiO2 va H2O tahlili haqida.",
+    "Coca-Cola, McDonald's va Wendy's Toshkentda ochildi.",
+    "YouTube, ChatGPT, LinkedIn va WhatsApp ilovalari.",
+    "Oʻzbekiston Respublikasi Konstitutsiyasi 2026-yil 15-sentyabr.",
+]
+
+
+def test_foreign_word_is_kept_and_reported_once():
+    text = "Toshkent Windows shahri"
+    result = to_cyrillic(text)
+    assert result.text == "Тошкент Windows шаҳри"
+    foreign = [w for w in result.warnings if w.rule == "latin.foreign"]
+    assert len(foreign) == 1
+    assert text[foreign[0].index : foreign[0].index + foreign[0].length] == "Windows"
+    assert foreign[0].alternatives == ("Windows", "Wиндоwс")
+    assert all(w.rule != "latin.unmapped" for w in result.warnings)
+
+
+def test_foreign_signals_bare_c_mixed_case_diacritics_but_not_ch():
+    assert to_cyrillic("Microsoft").text == "Microsoft"
+    assert to_cyrillic("iPhone SiO2 ChatGPT").text == "iPhone SiO2 ChatGPT"
+    assert to_cyrillic("Zürich").text == "Zürich"
+    assert to_cyrillic("Chelsea chempion").text == "Chelsea чемпион"
+    assert to_cyrillic("Michael").text == "Мичаэл"
+
+
+def test_foreign_word_keeps_suffixes_and_hyphenated_parts():
+    assert to_cyrillic("Windowsda Wi-Fi-ga Coca-Cola").text == "Windowsda Wi-Fi-ga Coca-Cola"
+    assert to_cyrillic("Toshkent-Samarqand 2026-yil").text == "Тошкент-Самарқанд 2026-йил"
+    assert to_cyrillic("McDonald's").text == "McDonald's"
+
+
+def test_pure_uzbek_text_is_unaffected_by_foreign_word_handling():
+    text = "Bu matnda hech qanday xorijiy harf yoʻq. Oʻzbekiston oʻzbek, Isʼhoq."
+    assert to_cyrillic(text) == to_cyrillic(text, foreign_words="transliterate")
+    assert all(w.rule != "latin.foreign" for w in to_cyrillic(text).warnings)
+
+
+def test_transliterate_option_restores_letter_by_letter_output():
+    result = to_cyrillic("Windows", foreign_words="transliterate")
+    assert result.text == "Wиндоwс"
+    assert [w.rule for w in result.warnings] == ["latin.unmapped", "latin.unmapped"]
+    with pytest.raises(ValueError):
+        to_cyrillic("Windows", foreign_words="drop")
+
+
+def test_foreign_offsets_point_into_the_callers_text():
+    text = "shahar https://x.uz/Windows Windows choʻl Zürich"
+    result = to_cyrillic(text)
+    assert result.text == "шаҳар https://x.uz/Windows Windows чўл Zürich"
+    hits = [
+        text[w.index : w.index + w.length] for w in result.warnings if w.rule == "latin.foreign"
+    ]
+    assert hits == ["Windows", "Zürich"]
+
+
+@pytest.mark.parametrize("sentence", MIXED_SENTENCES)
+def test_output_never_has_latin_after_cyrillic_inside_a_word(sentence):
+    text = to_cyrillic(sentence).text
+    for word in re.split(r"[^\w'ʻʼ-]+", text):
+        assert not re.search(r"[\u0400-\u04ff][^\s]*[A-Za-z]", word), (word, text)
 
 
 @pytest.mark.parametrize(

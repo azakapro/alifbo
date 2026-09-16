@@ -56,6 +56,7 @@ Their keyword-only options mirror the TypeScript `ConversionOptions`:
 | `protected_terms` | `protectedTerms` | `None`  |
 | `exceptions`      | `exceptions`     | `None`  |
 | `ng_as_digraph`   | `ngAsDigraph`    | `True`  |
+| `foreign_words`   | `foreignWords`   | `"keep"` (`to_cyrillic` only; `"transliterate"` converts foreign words letter by letter) |
 
 The other functions take only `text`:
 
