@@ -238,6 +238,7 @@ export const RULES: Record<Lang, Record<string, string>> = {
     'latin.iotated': '«yo», «yu», «ya» bitta kirill harfi (ё, ю, я) deb oʻqildi.',
     'latin.tutuq.ambiguous': 'Tutuq belgisi «ъ» deb oʻqildi; «ь» yoki hech narsa boʻlishi mumkin.',
     'latin.c.ambiguous': 'Yakka «c» kirill «ц» deb oʻqildi.',
+    'latin.unmapped': 'Bu belgining kirill alifbosida mosi yoʻq; u oʻzgarishsiz qoldirildi.',
   },
   en: {
     'cyrillic.e.positional':
@@ -255,6 +256,7 @@ export const RULES: Record<Lang, Record<string, string>> = {
     'latin.iotated': '“yo”, “yu” and “ya” were read as one Cyrillic letter (ё, ю, я).',
     'latin.tutuq.ambiguous': 'The tutuq sign was read as ъ; it could be ь or nothing.',
     'latin.c.ambiguous': 'A standalone c was read as Cyrillic ц.',
+    'latin.unmapped': 'This character has no Cyrillic equivalent; it was left as it is.',
   },
   ru: {
     'cyrillic.e.positional':
@@ -272,5 +274,6 @@ export const RULES: Record<Lang, Record<string, string>> = {
     'latin.iotated': '«yo», «yu» и «ya» прочитаны как одна буква (ё, ю, я).',
     'latin.tutuq.ambiguous': 'Знак тутук прочитан как ъ; это может быть ь или ничего.',
     'latin.c.ambiguous': 'Отдельная c прочитана как ц.',
+    'latin.unmapped': 'У этого символа нет соответствия в кириллице; он оставлен без изменений.',
   },
 };

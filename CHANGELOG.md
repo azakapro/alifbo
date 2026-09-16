@@ -4,22 +4,23 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- `toCyrillic` reports a `latin.unmapped` warning (with no alternatives) for every Latin letter it has to leave unchanged, such as `w`, and for a stray `ʻ` that is not part of `oʻ` or `gʻ`. The demo's review panel lists them in all three languages (#15, fixes #8, thanks @team-humaki).
+
 ## [0.3.0] - 2026-09-14
 
 ### Added
 
 - Browser demo: light and dark themes (follows the system, with a remembered override), Text and Document tabs, page-wide file drop, Uzbek/Russian/English interface, "About" and developer panels, link preview image, content-hashed assets, and a cross-browser test (Chromium, Firefox, WebKit) that runs before every deploy.
 - `detectAlphabet` scales Cyrillic confidence with the amount of evidence instead of always returning 1 (#14, thanks @team-humaki).
+- Demo: open Word `.docx` files and download the converted document with its formatting, tables, headers and footers intact, plus `.srt` subtitles and drag-and-drop. Supported formats are listed on the page.
+- Demo: Russian interface.
 
 ### Changed
 
 - The soft sign before a plain vowel is written as `y` (`батальон` → `batalyon`, `бульон` → `bulyon`); elsewhere it is still dropped (`медаль` → `medal`).
 - The demo's review panel lists only rules that can really be wrong (ц, щ, standalone c, ts, unmapped letters). The library still reports every positional choice.
-
-### Added
-
-- Demo: open Word `.docx` files and download the converted document with its formatting, tables, headers and footers intact, plus `.srt` subtitles and drag-and-drop. Supported formats are listed on the page.
-- Demo: Russian interface.
 
 ## [0.2.0] - 2026-09-13
 
