@@ -188,6 +188,23 @@ def test_foreign_offsets_point_into_the_callers_text():
     assert hits == ["Windows", "Zürich"]
 
 
+def test_known_brand_names_are_kept_whole_word_only():
+    assert (
+        to_cyrillic("google Google GOOGLE googleda Telegram-ga zoomlar").text
+        == "google Google GOOGLE googleda Telegram-ga zoomlar"
+    )
+    warnings = to_cyrillic("Google buni shunday").warnings
+    hit = next(w for w in warnings if w.rule == "latin.foreign")
+    assert hit.message == "Google is a known foreign name and was left unchanged."
+    assert hit.alternatives == ("Google", "Гоогле")
+    # Uzbek words that contain or resemble a listed name still convert.
+    assert (
+        to_cyrillic("metall telegramma safari opera bolt uzum").text
+        == "металл телеграмма сафари опера болт узум"
+    )
+    assert to_cyrillic("google", foreign_words="transliterate").text == "гоогле"
+
+
 @pytest.mark.parametrize("sentence", MIXED_SENTENCES)
 def test_output_never_has_latin_after_cyrillic_inside_a_word(sentence):
     text = to_cyrillic(sentence).text

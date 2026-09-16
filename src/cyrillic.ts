@@ -1,4 +1,5 @@
 import { firstCase, isUpper, lowerChar, upperText } from './case.js';
+import seedForeignWords from './data/foreign-words.json';
 import { oldLatinCore, toNewLatinMapped } from './latin.js';
 import { normalizeConfusables, prepareTextMapped, sourceRange } from './normalize.js';
 import { applyExceptions, mapSegments, splitProtected } from './pipeline.js';
@@ -225,18 +226,62 @@ export function fromCyrillic(text: string, options: ConversionOptions = {}): Con
 /** Lowercase letters of the 2026 Latin alphabet. Any other Latin letter marks a foreign word. */
 const UZBEK_LATIN_LETTERS = new Set([...'abdefghijklmnopqrstuvxyzöğşç']);
 
+/**
+ * Brand and product names whose letters are all Uzbek letters, so nothing in the spelling gives
+ * them away, yet whose Latin form is the norm in Uzbek text (`google` letter by letter is
+ * `гоогле`). Matched as whole words only, optionally with an Uzbek case or plural suffix.
+ */
+const KNOWN_FOREIGN_NAMES = new Set<string>(seedForeignWords);
+const UZBEK_SUFFIXES = [
+  'da',
+  'ga',
+  'ni',
+  'ning',
+  'dan',
+  'lar',
+  'larda',
+  'larga',
+  'larni',
+  'larning',
+  'lardan',
+  'dagi',
+  'lardagi',
+  'gacha',
+  'mi',
+];
+
 // What continues a word in the foreign-word scan: letters, marks, digits, hyphens and every
 // apostrophe-like character, so `Wi-Fi`, `oʻzbek`, `o'zbek` and `McDonald's` are single words.
 const WORD_PART = /^[\p{L}\p{M}\p{N}ʻʼ'‘’`´′＇-]$/u;
+const EDGE_PUNCTUATION = /^[ʻʼ'‘’`´′＇-]+|[ʻʼ'‘’`´′＇-]+$/gu;
+
+function isKnownForeignName(word: string): boolean {
+  const lower = [...word.replace(EDGE_PUNCTUATION, '')].map(lowerChar).join('');
+  // `google-da` counts through its first part; `googleda` through a suffix.
+  for (const candidate of new Set([lower, lower.split('-')[0]!])) {
+    if (KNOWN_FOREIGN_NAMES.has(candidate)) return true;
+    for (const suffix of UZBEK_SUFFIXES) {
+      if (
+        candidate.length > suffix.length &&
+        candidate.endsWith(suffix) &&
+        KNOWN_FOREIGN_NAMES.has(candidate.slice(0, -suffix.length))
+      )
+        return true;
+    }
+  }
+  return false;
+}
+
+type ForeignReason = 'letters' | 'name' | null;
 
 /**
  * A word is foreign when it has a Latin letter outside the Uzbek alphabet (`w`, `ü`, a `c`
  * that is not part of the previous alphabet's `ch`) or a capital after a lowercase letter
- * (`iPhone`, `SiO2`). Uzbek words never do either, so converting such a word letter by
- * letter would only produce a mix of two alphabets. Astral letters are skipped for parity
- * with the Python port.
+ * (`iPhone`, `SiO2`), or when it is a known brand name. Uzbek words never do either, so
+ * converting such a word letter by letter would only produce a mix of two alphabets. Astral
+ * letters are skipped for parity with the Python port.
  */
-function isForeignWord(word: string): boolean {
+function foreignReason(word: string): ForeignReason {
   const characters = [...normalizeConfusables(word)];
   let afterLowercase = false;
   for (let at = 0; at < characters.length; at += 1) {
@@ -247,17 +292,17 @@ function isForeignWord(word: string): boolean {
     }
     const lower = lowerChar(character);
     const digraph = lower === 'c' && lowerChar(characters[at + 1] ?? '') === 'h';
-    if (!digraph && !UZBEK_LATIN_LETTERS.has(lower)) return true;
-    if (isUpper(character) && afterLowercase) return true;
+    if (!digraph && !UZBEK_LATIN_LETTERS.has(lower)) return 'letters';
+    if (isUpper(character) && afterLowercase) return 'letters';
     afterLowercase = character !== upperText(character);
   }
-  return false;
+  return isKnownForeignName(word) ? 'name' : null;
 }
 
 interface Piece {
   text: string;
   start: number;
-  foreign: boolean;
+  foreign: ForeignReason;
 }
 
 /** Cut `text` (unprotected, starting at `start` in the caller's text) around foreign words. */
@@ -278,16 +323,17 @@ function splitForeignWords(text: string, start: number): Piece[] {
       end += part.length;
     }
     const word = text.slice(index, end);
-    if (isForeignWord(word)) {
+    const reason = foreignReason(word);
+    if (reason !== null) {
       if (index > cursor)
-        pieces.push({ text: text.slice(cursor, index), start: start + cursor, foreign: false });
-      pieces.push({ text: word, start: start + index, foreign: true });
+        pieces.push({ text: text.slice(cursor, index), start: start + cursor, foreign: null });
+      pieces.push({ text: word, start: start + index, foreign: reason });
       cursor = end;
     }
     index = end;
   }
   if (cursor < text.length)
-    pieces.push({ text: text.slice(cursor), start: start + cursor, foreign: false });
+    pieces.push({ text: text.slice(cursor), start: start + cursor, foreign: null });
   return pieces;
 }
 
@@ -430,7 +476,8 @@ function latinToCyrillic(text: string, options: ConversionOptions, start = 0): C
 /**
  * Convert new (or previous) Uzbek Latin to Cyrillic and report every lossy or ambiguous choice.
  * Words the Uzbek alphabet cannot spell (`Windows`, `Microsoft`, `iPhone`) are kept as written
- * and reported as `latin.foreign` unless `foreignWords` is `'transliterate'`.
+ * and reported as `latin.foreign` unless `foreignWords` is `'transliterate'`; so are known brand
+ * names such as `google` (see data/foreign-words.json).
  */
 export function toCyrillic(text: string, options: ConversionOptions = {}): ConversionResult {
   const keepForeign = options.foreignWords !== 'transliterate';
@@ -443,15 +490,17 @@ export function toCyrillic(text: string, options: ConversionOptions = {}): Conve
     }
     const pieces = keepForeign
       ? splitForeignWords(segment.text, segment.start)
-      : [{ text: segment.text, start: segment.start, foreign: false }];
+      : [{ text: segment.text, start: segment.start, foreign: null }];
     for (const piece of pieces) {
-      if (piece.foreign) {
+      if (piece.foreign !== null) {
         output += piece.text;
         warnings.push(
           warning(
             piece.start,
             'latin.foreign',
-            `${piece.text} looks foreign (non-Uzbek letters or mixed case) and was left unchanged.`,
+            piece.foreign === 'name'
+              ? `${piece.text} is a known foreign name and was left unchanged.`
+              : `${piece.text} looks foreign (non-Uzbek letters or mixed case) and was left unchanged.`,
             [piece.text, latinToCyrillic(piece.text, options).text],
             piece.text.length,
           ),

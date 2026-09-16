@@ -21,10 +21,14 @@ from .normalize import IdentityMappedText, MappedText, text_units, unit_length, 
 from .types import Warning
 
 
-def _load_json(name: str) -> object:
+def load_seed_json(name: str) -> object:
+    """A seed data file shared byte-for-byte with ``src/data`` in the TypeScript library."""
     return json.loads(
         files(__package__).joinpath("data").joinpath(name).read_text(encoding="utf-8")
     )
+
+
+_load_json = load_seed_json
 
 
 _SEED_EXCEPTIONS: Tuple[Tuple[str, str], ...] = tuple(

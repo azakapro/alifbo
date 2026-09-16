@@ -16,7 +16,14 @@ from .normalize import (
     text_units,
     unit_length,
 )
-from .pipeline import Options, apply_exceptions, make_options, map_segments, segment_starts
+from .pipeline import (
+    Options,
+    apply_exceptions,
+    load_seed_json,
+    make_options,
+    map_segments,
+    segment_starts,
+)
 from .types import ConversionResult, Warning
 
 _DIRECT_FROM_CYRILLIC = {
@@ -243,20 +250,59 @@ def _from_cyrillic(text: str, options: Options) -> ConversionResult:
 
 # Lowercase letters of the 2026 Latin alphabet. Any other Latin letter marks a foreign word.
 _UZBEK_LATIN_LETTERS = frozenset("abdefghijklmnopqrstuvxyzöğşç")
+# Brand and product names spelled entirely with Uzbek letters, whose Latin form is the norm in
+# Uzbek text (``google`` letter by letter is ``гоогле``). Whole words only, optionally with an
+# Uzbek case or plural suffix (mirrors ``KNOWN_FOREIGN_NAMES`` / ``UZBEK_SUFFIXES``).
+_KNOWN_FOREIGN_NAMES = frozenset(load_seed_json("foreign-words.json"))  # type: ignore[arg-type]
+_UZBEK_SUFFIXES = (
+    "da",
+    "ga",
+    "ni",
+    "ning",
+    "dan",
+    "lar",
+    "larda",
+    "larga",
+    "larni",
+    "larning",
+    "lardan",
+    "dagi",
+    "lardagi",
+    "gacha",
+    "mi",
+)
 # What continues a word in the foreign-word scan besides letters, marks and digits: hyphens and
 # every apostrophe-like character, so ``Wi-Fi``, ``o'zbek`` and ``McDonald's`` are single words.
 _WORD_PART_EXTRA = frozenset("ʻʼ'‘’`´′＇-")
+_EDGE_PUNCTUATION = "ʻʼ'‘’`´′＇-"
 
 
 def _is_word_part(character: str) -> bool:
     return unicodedata.category(character)[0] in "LMN" or character in _WORD_PART_EXTRA
 
 
-def _is_foreign_word(word: str) -> bool:
-    """Mirror of ``isForeignWord``.
+def _is_known_foreign_name(word: str) -> bool:
+    lower = "".join(lower_char(character) for character in word.strip(_EDGE_PUNCTUATION))
+    # ``google-da`` counts through its first part; ``googleda`` through a suffix.
+    for candidate in {lower, lower.split("-", 1)[0]}:
+        if candidate in _KNOWN_FOREIGN_NAMES:
+            return True
+        for suffix in _UZBEK_SUFFIXES:
+            if (
+                len(candidate) > len(suffix)
+                and candidate.endswith(suffix)
+                and candidate[: -len(suffix)] in _KNOWN_FOREIGN_NAMES
+            ):
+                return True
+    return False
 
-    A non-Uzbek Latin letter (``w``, ``ü``, a ``c`` outside the previous alphabet's ``ch``), or
-    a capital after a lowercase letter (``iPhone``). Astral letters are skipped, as in TypeScript.
+
+def _foreign_reason(word: str) -> Optional[str]:
+    """Mirror of ``foreignReason``: ``"letters"``, ``"name"`` or ``None``.
+
+    A non-Uzbek Latin letter (``w``, ``ü``, a ``c`` outside the previous alphabet's ``ch``), a
+    capital after a lowercase letter (``iPhone``), or a known brand name. Astral letters are
+    skipped, as in TypeScript.
     """
     characters = list(normalize_confusables(word))
     after_lowercase = False
@@ -265,21 +311,21 @@ def _is_foreign_word(word: str) -> bool:
             after_lowercase = False
             continue
         lower = lower_char(character)
-        digraph = (
-            lower == "c"
-            and lower_char(characters[at + 1] if at + 1 < len(characters) else "") == "h"
-        )
+        following = characters[at + 1] if at + 1 < len(characters) else ""
+        digraph = lower == "c" and lower_char(following) == "h"
         if not digraph and lower not in _UZBEK_LATIN_LETTERS:
-            return True
+            return "letters"
         if is_upper(character) and after_lowercase:
-            return True
+            return "letters"
         after_lowercase = character != upper_text(character)
-    return False
+    return "name" if _is_known_foreign_name(word) else None
 
 
-def _split_foreign_words(text: str, start: int, utf16: bool) -> List[Tuple[str, int, bool]]:
+def _split_foreign_words(
+    text: str, start: int, utf16: bool
+) -> List[Tuple[str, int, Optional[str]]]:
     """Cut unprotected ``text`` (at ``start`` offset units) around foreign words."""
-    pieces: List[Tuple[str, int, bool]] = []
+    pieces: List[Tuple[str, int, Optional[str]]] = []
     cursor = 0
     cursor_units = 0
     units = 0
@@ -295,16 +341,17 @@ def _split_foreign_words(text: str, start: int, utf16: bool) -> List[Tuple[str, 
             end += 1
         word = text[index:end]
         word_units = text_units(word, utf16)
-        if _is_foreign_word(word):
+        reason = _foreign_reason(word)
+        if reason is not None:
             if index > cursor:
-                pieces.append((text[cursor:index], start + cursor_units, False))
-            pieces.append((word, start + units, True))
+                pieces.append((text[cursor:index], start + cursor_units, None))
+            pieces.append((word, start + units, reason))
             cursor = end
             cursor_units = units + word_units
         units += word_units
         index = end
     if cursor < length:
-        pieces.append((text[cursor:], start + cursor_units, False))
+        pieces.append((text[cursor:], start + cursor_units, None))
     return pieces
 
 
@@ -467,17 +514,21 @@ def _to_cyrillic(text: str, options: Options) -> ConversionResult:
         pieces = (
             _split_foreign_words(segment.text, start, utf16)
             if keep_foreign
-            else [(segment.text, start, False)]
+            else [(segment.text, start, None)]
         )
         for piece, piece_start, foreign in pieces:
-            if foreign:
+            if foreign is not None:
                 output.append(piece)
                 warnings.append(
                     _warning(
                         piece_start,
                         "latin.foreign",
-                        f"{piece} looks foreign (non-Uzbek letters or mixed case) and was left "
-                        "unchanged.",
+                        (
+                            f"{piece} is a known foreign name and was left unchanged."
+                            if foreign == "name"
+                            else f"{piece} looks foreign (non-Uzbek letters or mixed case) and "
+                            "was left unchanged."
+                        ),
                         (piece, _latin_to_cyrillic(piece, options).text),
                         text_units(piece, utf16),
                     )

@@ -240,7 +240,7 @@ export const RULES: Record<Lang, Record<string, string>> = {
     'latin.c.ambiguous': 'Yakka «c» kirill «ц» deb oʻqildi.',
     'latin.unmapped': 'Bu belgining kirill alifbosida mosi yoʻq; u oʻzgarishsiz qoldirildi.',
     'latin.foreign':
-      'Bu soʻzda oʻzbek alifbosida yoʻq harflar bor (chet soʻz yoki nom boʻlsa kerak); u oʻzgarishsiz qoldirildi.',
+      'Bu chet soʻz yoki nom boʻlsa kerak (oʻzbek alifbosida yoʻq harflar yoki mashhur brend nomi); u oʻzgarishsiz qoldirildi.',
   },
   en: {
     'cyrillic.e.positional':
@@ -260,7 +260,7 @@ export const RULES: Record<Lang, Record<string, string>> = {
     'latin.c.ambiguous': 'A standalone c was read as Cyrillic ц.',
     'latin.unmapped': 'This character has no Cyrillic equivalent; it was left as it is.',
     'latin.foreign':
-      'This word has letters the Uzbek alphabet does not use, so it is probably a foreign name; it was left as it is.',
+      'This looks like a foreign name (letters the Uzbek alphabet does not use, or a well-known brand); it was left as it is.',
   },
   ru: {
     'cyrillic.e.positional':
@@ -280,6 +280,6 @@ export const RULES: Record<Lang, Record<string, string>> = {
     'latin.c.ambiguous': 'Отдельная c прочитана как ц.',
     'latin.unmapped': 'У этого символа нет соответствия в кириллице; он оставлен без изменений.',
     'latin.foreign':
-      'В этом слове есть буквы, которых нет в узбекском алфавите (вероятно, иностранное название); оно оставлено без изменений.',
+      'Похоже, это иностранное название (буквы, которых нет в узбекском алфавите, или известный бренд); оно оставлено без изменений.',
   },
 };
