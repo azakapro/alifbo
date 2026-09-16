@@ -239,6 +239,8 @@ export const RULES: Record<Lang, Record<string, string>> = {
     'latin.tutuq.ambiguous': 'Tutuq belgisi «ъ» deb oʻqildi; «ь» yoki hech narsa boʻlishi mumkin.',
     'latin.c.ambiguous': 'Yakka «c» kirill «ц» deb oʻqildi.',
     'latin.unmapped': 'Bu belgining kirill alifbosida mosi yoʻq; u oʻzgarishsiz qoldirildi.',
+    'latin.foreign':
+      'Bu soʻzda oʻzbek alifbosida yoʻq harflar bor (chet soʻz yoki nom boʻlsa kerak); u oʻzgarishsiz qoldirildi.',
   },
   en: {
     'cyrillic.e.positional':
@@ -257,6 +259,8 @@ export const RULES: Record<Lang, Record<string, string>> = {
     'latin.tutuq.ambiguous': 'The tutuq sign was read as ъ; it could be ь or nothing.',
     'latin.c.ambiguous': 'A standalone c was read as Cyrillic ц.',
     'latin.unmapped': 'This character has no Cyrillic equivalent; it was left as it is.',
+    'latin.foreign':
+      'This word has letters the Uzbek alphabet does not use, so it is probably a foreign name; it was left as it is.',
   },
   ru: {
     'cyrillic.e.positional':
@@ -275,5 +279,7 @@ export const RULES: Record<Lang, Record<string, string>> = {
     'latin.tutuq.ambiguous': 'Знак тутук прочитан как ъ; это может быть ь или ничего.',
     'latin.c.ambiguous': 'Отдельная c прочитана как ц.',
     'latin.unmapped': 'У этого символа нет соответствия в кириллице; он оставлен без изменений.',
+    'latin.foreign':
+      'В этом слове есть буквы, которых нет в узбекском алфавите (вероятно, иностранное название); оно оставлено без изменений.',
   },
 };

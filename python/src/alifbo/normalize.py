@@ -74,6 +74,14 @@ class MappedText(NamedTuple):
     origins: List[int]
 
 
+class IdentityMappedText(MappedText):
+    """A ``MappedText`` whose origins equal positions.
+
+    TypeScript represents this as ``origins: null`` and, in ``applyExceptions``, keeps positions
+    unchanged until a replacement changes the length; ``apply_exceptions`` mirrors that.
+    """
+
+
 def source_range(origins: List[int], index: int, length: int) -> Tuple[int, int]:
     """Translate a range in mapped text back to ``(index, length)`` in the source text."""
     last = origins[-1]
@@ -126,4 +134,7 @@ def prepare_text_mapped(text: str, utf16: bool) -> MappedText:
     if prepared_units != text_units(normalized.text, utf16):
         source_units = text_units(text, utf16)
         return MappedText(prepared, [min(unit, source_units) for unit in range(prepared_units + 1)])
+    # Already-NFC input of unchanged length keeps every position (TypeScript: origins null).
+    if prepared_units == text_units(text, utf16) and nfc(text) == text:
+        return IdentityMappedText(prepared, normalized.origins)
     return MappedText(prepared, normalized.origins)

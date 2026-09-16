@@ -87,10 +87,13 @@ interface ConversionOptions {
   protectedTerms?: string[];
   exceptions?: Record<string, string>;
   ngAsDigraph?: boolean; // default true
+  foreignWords?: 'keep' | 'transliterate'; // default 'keep', toCyrillic only
 }
 ```
 
 URLs, email addresses, backtick code spans, and seeded foreign names (`Shakespeare`, `Chelsea`, and `Photoshop`) are protected by default. `protectedTerms` adds exact literal spans. Set `protectSpans: false` to convert everything. User exceptions are word-level, take precedence over seeded exceptions, and are applied longest-first.
+
+`toCyrillic` keeps a word as written when the Uzbek alphabet cannot spell it: a letter Uzbek does not use (`Windows`, `Zürich`, the bare `c` in `Microsoft`) or a capital after a lowercase letter (`iPhone`, `SiO2`). Converting such a word letter by letter would only mix two alphabets (`Wиндоwс`). The whole word is kept, suffixes and hyphenated parts included (`Windowsda`, `Wi-Fi-ga`), and reported once as `latin.foreign` with the word and its letter-by-letter conversion as alternatives. Pure Uzbek text is unaffected. `foreignWords: 'transliterate'` restores the letter-by-letter output of versions before 0.5.0.
 
 ## Explicit conversion pipeline
 
@@ -115,7 +118,7 @@ The input characters U+02BB, U+02BC, U+0027, U+2018, U+2019, U+0060, U+00B4, U+2
 
 ## Cyrillic warnings
 
-Cyrillic conversion cannot be fully reversible. Positional `е`, ambiguous `ц`, `щ`, the hard and soft signs, and expanded `ё`, `ю`, and `я` produce structured warnings. Reverse conversion likewise warns when choosing among `е`/`э`, `щ`/`шч`, `ц`/`тс`, one-letter iotated forms, and interpretations of the tutuq sign. A Latin letter with no Cyrillic counterpart (such as `w`) or a stray `ʻ` is left unchanged and reported as `latin.unmapped`, with no alternatives. Warning indexes and lengths use JavaScript UTF-16 string offsets into the text you passed in, even when normalization, exceptions, or the old-to-new Latin pre-pass change lengths.
+Cyrillic conversion cannot be fully reversible. Positional `е`, ambiguous `ц`, `щ`, the hard and soft signs, and expanded `ё`, `ю`, and `я` produce structured warnings. Reverse conversion likewise warns when choosing among `е`/`э`, `щ`/`шч`, `ц`/`тс`, one-letter iotated forms, and interpretations of the tutuq sign. A word the Uzbek alphabet cannot spell is kept whole and reported as `latin.foreign` (see Options); with `foreignWords: 'transliterate'`, each Latin letter with no Cyrillic counterpart (such as `w`) is instead reported as `latin.unmapped`, with no alternatives, as is a stray `ʻ` in either mode. Warning indexes and lengths use JavaScript UTF-16 string offsets into the text you passed in, even when normalization, exceptions, or the old-to-new Latin pre-pass change lengths.
 
 The default positional rules are intentionally mechanical:
 
@@ -147,6 +150,7 @@ The CLI is a separate Node-only entry point; the browser-safe core never imports
 ```sh
 alifbo convert --to new-latin file.txt
 cat file.txt | alifbo convert --to cyrillic
+cat file.txt | alifbo convert --to cyrillic --foreign-words transliterate
 alifbo convert --to old-latin < input.txt > output.txt
 ```
 

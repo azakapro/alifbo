@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from importlib.resources import files
 from typing import Callable, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 
-from .normalize import MappedText, text_units, unit_length, utf16_length
+from .normalize import IdentityMappedText, MappedText, text_units, unit_length, utf16_length
 from .types import Warning
 
 
@@ -59,6 +59,7 @@ class Options:
     protected_terms: Tuple[str, ...] = ()
     exception_entries: Tuple[Tuple[str, str], ...] = ()
     ng_as_digraph: bool = True
+    foreign_words: str = "keep"
     utf16_offsets: bool = False
 
 
@@ -68,10 +69,13 @@ def make_options(
     protected_terms: Optional[Iterable[str]] = None,
     exceptions: Optional[Mapping[str, str]] = None,
     ng_as_digraph: bool = True,
+    foreign_words: str = "keep",
     utf16_offsets: bool = False,
 ) -> Options:
     if isinstance(protected_terms, str):
         raise TypeError("protected_terms must be an iterable of strings, not a single string")
+    if foreign_words not in ("keep", "transliterate"):
+        raise ValueError("foreign_words must be 'keep' or 'transliterate'")
     merged = dict(_SEED_EXCEPTIONS)
     if exceptions is not None:
         merged.update(exceptions)
@@ -91,6 +95,7 @@ def make_options(
         protected_terms=tuple(protected_terms or ()),
         exception_entries=tuple(entries),
         ng_as_digraph=bool(ng_as_digraph),
+        foreign_words=foreign_words,
         utf16_offsets=utf16_offsets,
     )
 
@@ -188,13 +193,19 @@ def split_protected(text: str, options: Options = DEFAULT_OPTIONS) -> List[Segme
 
 
 def apply_exceptions(source: MappedText, options: Options) -> MappedText:
-    """Replace whole-word exceptions, mapping each replacement unit to the key's start."""
+    """Replace whole-word exceptions, mapping each replacement unit to the key's start.
+
+    Like ``applyExceptions`` in TypeScript, identity-mapped input keeps its positions until a
+    replacement changes the length; only from then on are replacement units mapped to the
+    key's start.
+    """
     text, origins = source
     utf16 = options.utf16_offsets
     entries = options.exception_entries
     length = len(text)
     result: List[str] = []
-    result_origins: List[int] = []
+    # ``None`` while positions are unchanged (identity input, no length change yet).
+    result_origins: Optional[List[int]] = None if isinstance(source, IdentityMappedText) else []
     cursor = 0
     units = 0  # ``cursor`` in offset units
     while cursor < length:
@@ -206,18 +217,26 @@ def apply_exceptions(source: MappedText, options: Options) -> MappedText:
                 and text.startswith(key, cursor)
                 and not (after_index < length and _is_word_character(text[after_index]))
             ):
+                key_units = text_units(key, utf16)
+                value_units = text_units(value, utf16)
+                if result_origins is None and value_units != key_units:
+                    result_origins = list(range(units))
                 result.append(value)
-                result_origins.extend([origins[units]] * text_units(value, utf16))
+                if result_origins is not None:
+                    result_origins.extend([origins[units]] * value_units)
                 cursor = after_index
-                units += text_units(key, utf16)
+                units += key_units
                 break
         else:
             character = text[cursor]
             result.append(character)
             width = unit_length(character, utf16)
-            result_origins.extend(origins[units : units + width])
+            if result_origins is not None:
+                result_origins.extend(origins[units : units + width])
             cursor += 1
             units += width
+    if result_origins is None:
+        return IdentityMappedText("".join(result), list(range(units + 1)))
     result_origins.append(origins[units])
     return MappedText("".join(result), result_origins)
 

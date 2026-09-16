@@ -40,11 +40,16 @@ OPTION_NAMES = {
     "protectedTerms": "protected_terms",
     "exceptions": "exceptions",
     "ngAsDigraph": "ng_as_digraph",
+    "foreignWords": "foreign_words",
 }
 
 
 def python_options(case: Dict[str, Any]) -> Dict[str, Any]:
-    return {OPTION_NAMES[name]: value for name, value in case.get("options", {}).items()}
+    options = {OPTION_NAMES[name]: value for name, value in case.get("options", {}).items()}
+    # TypeScript shares one options object; only to_cyrillic takes foreign_words in Python.
+    if case["fn"] != "toCyrillic":
+        options.pop("foreign_words", None)
+    return options
 
 
 def warning_dicts(result: alifbo.ConversionResult) -> List[Dict[str, Any]]:

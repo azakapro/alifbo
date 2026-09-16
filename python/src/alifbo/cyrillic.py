@@ -8,8 +8,15 @@ from typing import Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from .case import first_case, is_upper, lower_char, upper_text
 from .latin import old_latin_core, to_new_latin_mapped
-from .normalize import nfc, prepare_text_mapped, source_range, unit_length
-from .pipeline import Options, apply_exceptions, make_options, map_segments
+from .normalize import (
+    nfc,
+    normalize_confusables,
+    prepare_text_mapped,
+    source_range,
+    text_units,
+    unit_length,
+)
+from .pipeline import Options, apply_exceptions, make_options, map_segments, segment_starts
 from .types import ConversionResult, Warning
 
 _DIRECT_FROM_CYRILLIC = {
@@ -234,141 +241,252 @@ def _from_cyrillic(text: str, options: Options) -> ConversionResult:
     return ConversionResult(converted, tuple(warnings))
 
 
+# Lowercase letters of the 2026 Latin alphabet. Any other Latin letter marks a foreign word.
+_UZBEK_LATIN_LETTERS = frozenset("abdefghijklmnopqrstuvxyzöğşç")
+# What continues a word in the foreign-word scan besides letters, marks and digits: hyphens and
+# every apostrophe-like character, so ``Wi-Fi``, ``o'zbek`` and ``McDonald's`` are single words.
+_WORD_PART_EXTRA = frozenset("ʻʼ'‘’`´′＇-")
+
+
+def _is_word_part(character: str) -> bool:
+    return unicodedata.category(character)[0] in "LMN" or character in _WORD_PART_EXTRA
+
+
+def _is_foreign_word(word: str) -> bool:
+    """Mirror of ``isForeignWord``.
+
+    A non-Uzbek Latin letter (``w``, ``ü``, a ``c`` outside the previous alphabet's ``ch``), or
+    a capital after a lowercase letter (``iPhone``). Astral letters are skipped, as in TypeScript.
+    """
+    characters = list(normalize_confusables(word))
+    after_lowercase = False
+    for at, character in enumerate(characters):
+        if ord(character) > 0xFFFF or not _is_latin_letter(character):
+            after_lowercase = False
+            continue
+        lower = lower_char(character)
+        digraph = (
+            lower == "c"
+            and lower_char(characters[at + 1] if at + 1 < len(characters) else "") == "h"
+        )
+        if not digraph and lower not in _UZBEK_LATIN_LETTERS:
+            return True
+        if is_upper(character) and after_lowercase:
+            return True
+        after_lowercase = character != upper_text(character)
+    return False
+
+
+def _split_foreign_words(text: str, start: int, utf16: bool) -> List[Tuple[str, int, bool]]:
+    """Cut unprotected ``text`` (at ``start`` offset units) around foreign words."""
+    pieces: List[Tuple[str, int, bool]] = []
+    cursor = 0
+    cursor_units = 0
+    units = 0
+    index = 0
+    length = len(text)
+    while index < length:
+        if not _is_word_part(text[index]):
+            units += unit_length(text[index], utf16)
+            index += 1
+            continue
+        end = index
+        while end < length and _is_word_part(text[end]):
+            end += 1
+        word = text[index:end]
+        word_units = text_units(word, utf16)
+        if _is_foreign_word(word):
+            if index > cursor:
+                pieces.append((text[cursor:index], start + cursor_units, False))
+            pieces.append((word, start + units, True))
+            cursor = end
+            cursor_units = units + word_units
+        units += word_units
+        index = end
+    if cursor < length:
+        pieces.append((text[cursor:], start + cursor_units, False))
+    return pieces
+
+
+def _convert_at(source: str, index: int, position: int, warnings: List[Warning]) -> Tuple[str, int]:
+    """Convert the letters at ``index`` and report the choice: (piece, characters read)."""
+    length = len(source)
+    character = source[index]
+    lower = lower_char(character)
+    uppercase = character != lower
+    pair = lower + (lower_char(source[index + 1]) if index + 1 < length else "")
+    # Inverse of the fromCyrillic е rule: Cyrillic е is read "ye" at a word start, after
+    # a vowel, or after ъ/ь, so there "ye" maps back to е and a bare "e" must be э.
+    previous = _letter_at(source, index - 1) if index > 0 else ""
+    positional = previous == "" or previous == "ʼ" or previous in _LATIN_VOWELS
+    replacement: Optional[str]
+    consumed = 1
+
+    if pair == "şç":
+        replacement = "щ"
+        consumed = 2
+        warnings.append(
+            _warning(
+                position,
+                "latin.shcha.ambiguous",
+                "şç was interpreted as Cyrillic щ rather than шч.",
+                ("щ", "шч"),
+                2,
+            )
+        )
+    elif pair in _IOTATED_REVERSE:
+        replacement = _IOTATED_REVERSE[pair]
+        consumed = 2
+        warnings.append(
+            _warning(
+                position,
+                f"latin.{pair}.ambiguous",
+                f"{pair} was interpreted as one iotated Cyrillic letter.",
+                (replacement, "й" + _DIRECT_TO_CYRILLIC[pair[1]]),
+                2,
+            )
+        )
+    elif pair == "ts":
+        replacement = "ц"
+        consumed = 2
+        warnings.append(
+            _warning(
+                position,
+                "latin.tse.ambiguous",
+                "ts was interpreted as Cyrillic ц.",
+                ("ц", "тс"),
+                2,
+            )
+        )
+    elif pair == "ye" and positional:
+        replacement = "е"
+        consumed = 2
+        warnings.append(
+            _warning(
+                position,
+                "latin.ye.positional",
+                "ye at a word start, after a vowel, or after tutuq was interpreted as Cyrillic е.",
+                ("е", "йе"),
+                2,
+            )
+        )
+    elif lower == "e":
+        replacement = "э" if positional else "е"
+        warnings.append(
+            _warning(
+                position,
+                "latin.e.ambiguous",
+                f"Latin e can correspond to Cyrillic е or э; {replacement} was chosen.",
+                ("э", "е") if positional else ("е", "э"),
+            )
+        )
+    elif character == "ʼ":
+        replacement = "ъ"
+        warnings.append(
+            _warning(
+                position,
+                "latin.tutuq.ambiguous",
+                "Tutuq belgisi was interpreted as a hard sign.",
+                ("ъ", "ь", ""),
+            )
+        )
+    elif lower == "c":
+        replacement = "ц"
+        warnings.append(
+            _warning(
+                position,
+                "latin.c.ambiguous",
+                "Standalone c was interpreted as Cyrillic ц.",
+                ("ц", "с"),
+            )
+        )
+    else:
+        replacement = _DIRECT_TO_CYRILLIC.get(lower)
+        if replacement is None and (_is_latin_letter(character) or character == "ʻ"):
+            warnings.append(
+                _warning(
+                    position,
+                    "latin.unmapped",
+                    (
+                        "Stray ʻ is not part of oʻ or gʻ and has no Cyrillic mapping."
+                        if character == "ʻ"
+                        else f"Latin {character} has no Cyrillic mapping."
+                    ),
+                    (),
+                )
+            )
+
+    if replacement is None:
+        piece = character
+    elif uppercase:
+        piece = first_case(character, replacement)
+    else:
+        piece = replacement
+    return piece, consumed
+
+
 def _to_cyrillic_core(text: str, offset: int, options: Options) -> Tuple[str, List[Warning]]:
     source, origins = prepare_text_mapped(text, options.utf16_offsets)
-    length = len(source)
     output: List[str] = []
     warnings: List[Warning] = []
     index = 0
     position = 0
-    while index < length:
+    while index < len(source):
         character = source[index]
-        lower = lower_char(character)
-        uppercase = character != lower
-        pair = lower + (lower_char(source[index + 1]) if index + 1 < length else "")
-        # Inverse of the fromCyrillic е rule: Cyrillic е is read "ye" at a word start, after
-        # a vowel, or after ъ/ь, so there "ye" maps back to е and a bare "e" must be э.
-        previous = _letter_at(source, index - 1) if index > 0 else ""
-        positional = previous == "" or previous == "ʼ" or previous in _LATIN_VOWELS
-        replacement: Optional[str]
-        consumed = 1
-
-        if pair == "şç":
-            replacement = "щ"
-            consumed = 2
-            warnings.append(
-                _warning(
-                    position,
-                    "latin.shcha.ambiguous",
-                    "şç was interpreted as Cyrillic щ rather than шч.",
-                    ("щ", "шч"),
-                    2,
-                )
-            )
-        elif pair in _IOTATED_REVERSE:
-            replacement = _IOTATED_REVERSE[pair]
-            consumed = 2
-            warnings.append(
-                _warning(
-                    position,
-                    f"latin.{pair}.ambiguous",
-                    f"{pair} was interpreted as one iotated Cyrillic letter.",
-                    (replacement, "й" + _DIRECT_TO_CYRILLIC[pair[1]]),
-                    2,
-                )
-            )
-        elif pair == "ts":
-            replacement = "ц"
-            consumed = 2
-            warnings.append(
-                _warning(
-                    position,
-                    "latin.tse.ambiguous",
-                    "ts was interpreted as Cyrillic ц.",
-                    ("ц", "тс"),
-                    2,
-                )
-            )
-        elif pair == "ye" and positional:
-            replacement = "е"
-            consumed = 2
-            warnings.append(
-                _warning(
-                    position,
-                    "latin.ye.positional",
-                    "ye at a word start, after a vowel, or after tutuq was interpreted as "
-                    "Cyrillic е.",
-                    ("е", "йе"),
-                    2,
-                )
-            )
-        elif lower == "e":
-            replacement = "э" if positional else "е"
-            warnings.append(
-                _warning(
-                    position,
-                    "latin.e.ambiguous",
-                    f"Latin e can correspond to Cyrillic е or э; {replacement} was chosen.",
-                    ("э", "е") if positional else ("е", "э"),
-                )
-            )
-        elif character == "ʼ":
-            replacement = "ъ"
-            warnings.append(
-                _warning(
-                    position,
-                    "latin.tutuq.ambiguous",
-                    "Tutuq belgisi was interpreted as a hard sign.",
-                    ("ъ", "ь", ""),
-                )
-            )
-        elif lower == "c":
-            replacement = "ц"
-            warnings.append(
-                _warning(
-                    position,
-                    "latin.c.ambiguous",
-                    "Standalone c was interpreted as Cyrillic ц.",
-                    ("ц", "с"),
-                )
-            )
-        else:
-            replacement = _DIRECT_TO_CYRILLIC.get(lower)
-            if replacement is None and (_is_latin_letter(character) or character == "ʻ"):
-                warnings.append(
-                    _warning(
-                        position,
-                        "latin.unmapped",
-                        (
-                            "Stray ʻ is not part of oʻ or gʻ and has no Cyrillic mapping."
-                            if character == "ʻ"
-                            else f"Latin {character} has no Cyrillic mapping."
-                        ),
-                        (),
-                    )
-                )
-
-        if replacement is None:
-            output.append(character)
-        elif uppercase:
-            output.append(first_case(character, replacement))
-        else:
-            output.append(replacement)
+        piece, consumed = _convert_at(source, index, position, warnings)
+        output.append(piece)
         # A two-character match only ever consumes Basic Multilingual Plane letters.
         position += consumed if consumed == 2 else unit_length(character, options.utf16_offsets)
         index += consumed
     return nfc("".join(output)), _to_source_offsets(warnings, origins, offset)
 
 
-def _to_cyrillic(text: str, options: Options) -> ConversionResult:
+def _latin_to_cyrillic(text: str, options: Options, start: int = 0) -> ConversionResult:
+    """Latin → Cyrillic for one span with no foreign words; offsets are shifted by ``start``."""
     canonical = to_new_latin_mapped(text, options)
     converted, warnings = map_segments(
         canonical.text,
         options,
-        lambda segment, start: _to_cyrillic_core(segment, start, options),
+        lambda segment, offset: _to_cyrillic_core(segment, offset, options),
     )
     # Warnings point into the new-Latin intermediate; report them against the caller's text.
-    return ConversionResult(converted, tuple(_to_source_offsets(warnings, canonical.origins, 0)))
+    return ConversionResult(
+        converted, tuple(_to_source_offsets(warnings, canonical.origins, start))
+    )
+
+
+def _to_cyrillic(text: str, options: Options) -> ConversionResult:
+    keep_foreign = options.foreign_words != "transliterate"
+    utf16 = options.utf16_offsets
+    output: List[str] = []
+    warnings: List[Warning] = []
+    for segment, start in segment_starts(text, options):
+        if segment.protected:
+            output.append(segment.text)
+            continue
+        pieces = (
+            _split_foreign_words(segment.text, start, utf16)
+            if keep_foreign
+            else [(segment.text, start, False)]
+        )
+        for piece, piece_start, foreign in pieces:
+            if foreign:
+                output.append(piece)
+                warnings.append(
+                    _warning(
+                        piece_start,
+                        "latin.foreign",
+                        f"{piece} looks foreign (non-Uzbek letters or mixed case) and was left "
+                        "unchanged.",
+                        (piece, _latin_to_cyrillic(piece, options).text),
+                        text_units(piece, utf16),
+                    )
+                )
+                continue
+            converted = _latin_to_cyrillic(piece, options, piece_start)
+            output.append(converted.text)
+            warnings.extend(converted.warnings)
+    return ConversionResult("".join(output), tuple(warnings))
 
 
 def from_cyrillic(
@@ -398,8 +516,14 @@ def to_cyrillic(
     protected_terms: Optional[Iterable[str]] = None,
     exceptions: Optional[Mapping[str, str]] = None,
     ng_as_digraph: bool = True,
+    foreign_words: str = "keep",
 ) -> ConversionResult:
-    """Convert new Uzbek Latin to Cyrillic and report every lossy or ambiguous choice."""
+    """Convert new Uzbek Latin to Cyrillic and report every lossy or ambiguous choice.
+
+    ``foreign_words="keep"`` (default) leaves a word with letters the Uzbek alphabet does
+    not use (``Windows``, ``Microsoft``) or mixed case (``iPhone``) as written and reports
+    ``latin.foreign``; ``"transliterate"`` converts it letter by letter.
+    """
     return _to_cyrillic(
         text,
         make_options(
@@ -407,5 +531,6 @@ def to_cyrillic(
             protected_terms=protected_terms,
             exceptions=exceptions,
             ng_as_digraph=ng_as_digraph,
+            foreign_words=foreign_words,
         ),
     )

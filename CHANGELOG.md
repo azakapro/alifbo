@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Changed
+
+- `toCyrillic` keeps a word as written when the Uzbek alphabet cannot spell it (a letter Uzbek does not use such as `w`, `ü` or a bare `c`, or a capital after a lowercase letter as in `iPhone`) instead of mixing two alphabets (`Windows` no longer becomes `Wиндоwс`, `Microsoft` no longer `Мицрософт`). The whole word is kept, suffixes included, and reported once as `latin.foreign` with the word and its letter-by-letter conversion as alternatives. Pure Uzbek text is unaffected. The new `foreignWords: 'transliterate'` option (`--foreign-words transliterate` on the CLI, `foreign_words="transliterate"` in Python) restores the previous behaviour. Measured on 17,000 words of Uzbek Wikipedia text: the rule fires on 2.4% of words, all of them foreign names.
+- The demo's review panel explains kept foreign words in Uzbek, Russian and English.
+
+### Fixed
+
+- Python: warning offsets were wrong (pointing at the word start) after an `exceptions` entry replaced a word with one of the same length; they now match the TypeScript library.
+
 ## [0.4.0] - 2026-09-16
 
 ### Added
