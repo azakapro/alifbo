@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-16
+
 ### Added
 
 - `toCyrillic` reports a `latin.unmapped` warning (with no alternatives) for every Latin letter it has to leave unchanged, such as `w`, and for a stray `ʻ` that is not part of `oʻ` or `gʻ`. The demo's review panel lists them in all three languages (#15, fixes #8, thanks @team-humaki).
@@ -69,7 +71,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - ESM, CommonJS, and TypeScript declaration builds.
 - Golden corpus, property, normalization, casing, search, CLI, and ambiguity tests.
 
-[Unreleased]: https://github.com/azakapro/alifbo/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/azakapro/alifbo/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/azakapro/alifbo/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/azakapro/alifbo/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/azakapro/alifbo/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/azakapro/alifbo/compare/v0.1.0...v0.1.1
