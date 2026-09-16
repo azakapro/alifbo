@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-09-16
+
 ### Added
 
 - `toCyrillic` also keeps well-known brand and product names that are spelled entirely with Uzbek letters, such as `google`, `apple`, `zoom` and `telegram` (`google` letter by letter was `гоогле`). The 120 names in `src/data/foreign-words.json` are matched as whole words only, in any case, optionally with an Uzbek case or plural suffix (`googleda`, `Telegram-ga`); each was checked against Uzbek text, and names that are also Uzbek words (`bolt`, `uzum`, `humo`, `ozon`, `signal`) were left out so those still convert. Reported as `latin.foreign` like the letter-based rule; `foreignWords: 'transliterate'` turns it off.
@@ -86,7 +88,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - ESM, CommonJS, and TypeScript declaration builds.
 - Golden corpus, property, normalization, casing, search, CLI, and ambiguity tests.
 
-[Unreleased]: https://github.com/azakapro/alifbo/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/azakapro/alifbo/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/azakapro/alifbo/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/azakapro/alifbo/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/azakapro/alifbo/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/azakapro/alifbo/compare/v0.2.0...v0.3.0
