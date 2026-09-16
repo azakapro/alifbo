@@ -216,6 +216,21 @@ describe('foreign words in Latin → Cyrillic conversion', () => {
     expect(hits).toEqual(['Windows', 'Zürich']);
   });
 
+  it('keeps known brand names spelled with Uzbek letters, whole-word only', () => {
+    expect(toCyrillic('google Google GOOGLE googleda Telegram-ga zoomlar').text).toBe(
+      'google Google GOOGLE googleda Telegram-ga zoomlar',
+    );
+    const result = toCyrillic('Google buni shunday');
+    const [hit] = result.warnings.filter((warning) => warning.rule === 'latin.foreign');
+    expect(hit?.message).toBe('Google is a known foreign name and was left unchanged.');
+    expect(hit?.alternatives).toEqual(['Google', 'Гоогле']);
+    // Uzbek words that contain or resemble a listed name still convert.
+    expect(toCyrillic('metall telegramma safari opera bolt uzum').text).toBe(
+      'металл телеграмма сафари опера болт узум',
+    );
+    expect(toCyrillic('google', { foreignWords: 'transliterate' }).text).toBe('гоогле');
+  });
+
   it('never leaves a Latin letter after a Cyrillic one inside a word', () => {
     for (const sentence of MIXED_SENTENCES) {
       const { text } = toCyrillic(sentence);

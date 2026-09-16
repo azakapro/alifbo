@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Added
+
+- `toCyrillic` also keeps well-known brand and product names that are spelled entirely with Uzbek letters, such as `google`, `apple`, `zoom` and `telegram` (`google` letter by letter was `гоогле`). The 120 names in `src/data/foreign-words.json` are matched as whole words only, in any case, optionally with an Uzbek case or plural suffix (`googleda`, `Telegram-ga`); each was checked against Uzbek text, and names that are also Uzbek words (`bolt`, `uzum`, `humo`, `ozon`, `signal`) were left out so those still convert. Reported as `latin.foreign` like the letter-based rule; `foreignWords: 'transliterate'` turns it off.
+
 ## [0.5.0] - 2026-09-16
 
 ### Changed

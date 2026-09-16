@@ -15,7 +15,7 @@ REPO_ROOT = PYTHON_ROOT.parent
 PACKAGE = PYTHON_ROOT / "src" / "alifbo"
 
 
-@pytest.mark.parametrize("name", ["exceptions.json", "protected-terms.json"])
+@pytest.mark.parametrize("name", ["exceptions.json", "protected-terms.json", "foreign-words.json"])
 def test_seed_data_is_byte_identical_to_typescript(name: str) -> None:
     assert (PACKAGE / "data" / name).read_bytes() == (
         REPO_ROOT / "src" / "data" / name

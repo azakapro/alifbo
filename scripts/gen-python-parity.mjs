@@ -180,6 +180,9 @@ add([
   'ashob-Windows Windows-ashob ashob Windows',
   "'Windows' “Windows” Windows's Windows'",
   'w\u0301indows u\u0308 Zu\u0308rich ș Ș șalom Windowș',
+  'google Google GOOGLE googleda googlelarning Google-da google-ga zoomlar zoommi',
+  'metall metalar telegramma safari opera bolt uzum meta Meta-ga',
+  "'google' “Google” google's Google’s -google- googleʼ",
 ]);
 
 const cyrillicPairs = [
