@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-16
+
 ### Changed
 
 - `toCyrillic` keeps a word as written when the Uzbek alphabet cannot spell it (a letter Uzbek does not use such as `w`, `ü` or a bare `c`, or a capital after a lowercase letter as in `iPhone`) instead of mixing two alphabets (`Windows` no longer becomes `Wиндоwс`, `Microsoft` no longer `Мицрософт`). The whole word is kept, suffixes included, and reported once as `latin.foreign` with the word and its letter-by-letter conversion as alternatives. Pure Uzbek text is unaffected. The new `foreignWords: 'transliterate'` option (`--foreign-words transliterate` on the CLI, `foreign_words="transliterate"` in Python) restores the previous behaviour. Measured on 17,000 words of Uzbek Wikipedia text: the rule fires on 2.4% of words, all of them foreign names.
@@ -80,7 +82,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - ESM, CommonJS, and TypeScript declaration builds.
 - Golden corpus, property, normalization, casing, search, CLI, and ambiguity tests.
 
-[Unreleased]: https://github.com/azakapro/alifbo/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/azakapro/alifbo/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/azakapro/alifbo/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/azakapro/alifbo/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/azakapro/alifbo/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/azakapro/alifbo/compare/v0.1.1...v0.2.0
