@@ -112,6 +112,15 @@ def test_protected_spans_in_either_direction():
     assert to_cyrillic("https://example.uz/sh Şavkat").text == "https://example.uz/sh Шавкат"
 
 
+def test_fullwidth_and_ordinal_latin_warn_unmapped():
+    assert any(warning.rule == "latin.unmapped" for warning in to_cyrillic("Ａ").warnings)
+    assert any(warning.rule == "latin.unmapped" for warning in to_cyrillic("ª").warnings)
+
+
+def test_ipa_turned_a_does_not_warn_unmapped():
+    assert [warning.rule for warning in to_cyrillic("ɐ").warnings if warning.rule == "latin.unmapped"] == []
+
+
 @pytest.mark.parametrize(
     ("text", "alphabet"),
     [

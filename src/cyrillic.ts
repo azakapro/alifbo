@@ -95,6 +95,10 @@ function toSourceOffsets(
   }
 }
 
+function isLatinLetter(character: string): boolean {
+  return /^\p{L}$/u.test(character) && /^[A-Za-z\u00c0-\u024f\u1e00-\u1eff]/u.test(character.normalize('NFKC'));
+}
+
 /** The lowercased letter at `index` for positional rules, or '' when it is not a letter. */
 function letterAt(source: string, index: number): string {
   if (index < 0 || index >= source.length) return '';
@@ -303,6 +307,18 @@ function toCyrillicCore(text: string, offset: number): ConversionResult {
       );
     } else {
       replacement = DIRECT_TO_CYRILLIC[lower];
+      if (replacement === undefined && (isLatinLetter(character) || character === 'ʻ')) {
+        warnings.push(
+          warning(
+            index,
+            'latin.unmapped',
+            character === 'ʻ'
+              ? 'Stray ʻ is not part of oʻ or gʻ and has no Cyrillic mapping.'
+              : `Latin ${character} has no Cyrillic mapping.`,
+            [],
+          ),
+        );
+      }
     }
 
     output +=
