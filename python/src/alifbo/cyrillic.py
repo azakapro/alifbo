@@ -109,7 +109,7 @@ _LATIN_START = re.compile("[A-Za-z\u00c0-\u024f\u1e00-\u1eff]")
 
 
 def _is_latin_letter(character: str) -> bool:
-    """True when ``character`` is a BMP letter whose NFKC form starts in Latin 1 / Extended A-B / Additional.
+    """True for a BMP letter whose NFKC form starts in Latin-1, Extended-A/B or Additional.
 
     Astral letters (e.g. U+1D400) are skipped: the TypeScript loop walks UTF-16
     code units, so a surrogate half never matches ``\\p{L}``.

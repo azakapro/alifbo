@@ -118,7 +118,7 @@ def test_fullwidth_and_ordinal_latin_warn_unmapped():
 
 
 def test_ipa_turned_a_does_not_warn_unmapped():
-    assert [warning.rule for warning in to_cyrillic("ɐ").warnings if warning.rule == "latin.unmapped"] == []
+    assert all(warning.rule != "latin.unmapped" for warning in to_cyrillic("ɐ").warnings)
 
 
 @pytest.mark.parametrize(
