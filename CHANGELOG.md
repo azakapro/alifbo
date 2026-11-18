@@ -4,6 +4,8 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-18
+
 ### Fixed
 
 - `n` followed by `gʻ` is read as `n` + `gʻ`, not as the `ng` digraph plus a stray `ʻ`. `qoʻngʻiroq` now becomes `qönğiroq` (was `qöngʻiroq`) and `қўнғироқ` in `toCyrillic` (was `қўнгʻироқ` with a `latin.unmapped` warning), matching `fromCyrillic('қўнғироқ')`. Affects `toNewLatin`, `toCyrillic` and `foldSearchKey` for every apostrophe form, in TypeScript and Python. The `ng` digraph itself is unchanged.
@@ -92,7 +94,8 @@ All notable changes to this project are documented here. The format follows [Kee
 - ESM, CommonJS, and TypeScript declaration builds.
 - Golden corpus, property, normalization, casing, search, CLI, and ambiguity tests.
 
-[Unreleased]: https://github.com/azakapro/alifbo/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/azakapro/alifbo/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/azakapro/alifbo/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/azakapro/alifbo/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/azakapro/alifbo/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/azakapro/alifbo/compare/v0.3.0...v0.4.0
