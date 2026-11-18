@@ -44,7 +44,7 @@ jobs:
           node scripts/gen-python-parity.mjs
           git diff --exit-code python/tests/parity.json
       # setup-uv no longer publishes floating major tags, so pin the release.
-      - uses: astral-sh/setup-uv@v10.1.0
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Lint
