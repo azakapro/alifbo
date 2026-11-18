@@ -1,13 +1,28 @@
 [
-  { "input": "sh ch oʻ gʻ", "expected": "ş ç ö ğ", "rule": "latin.lower", "note": "lowercase" },
-  { "input": "Sh Ch Oʻ Gʻ", "expected": "Ş Ç Ö Ğ", "rule": "latin.title", "note": "title case" },
+  {
+    "input": "sh ch oʻ gʻ",
+    "expected": "ş ç ö ğ",
+    "rule": "latin.lower",
+    "note": "lowercase"
+  },
+  {
+    "input": "Sh Ch Oʻ Gʻ",
+    "expected": "Ş Ç Ö Ğ",
+    "rule": "latin.title",
+    "note": "title case"
+  },
   {
     "input": "SH CH Oʻ Gʻ",
     "expected": "Ş Ç Ö Ğ",
     "rule": "latin.upper",
     "note": "uppercase first character controls output"
   },
-  { "input": "SHAHAR", "expected": "ŞAHAR", "rule": "latin.upper-word", "note": "uppercase word" },
+  {
+    "input": "SHAHAR",
+    "expected": "ŞAHAR",
+    "rule": "latin.upper-word",
+    "note": "uppercase word"
+  },
   {
     "input": "asʼhob Isʼhoq",
     "expected": "asʼhob Isʼhoq",
@@ -19,5 +34,35 @@
     "expected": "asʼhob Isʼhoq",
     "rule": "latin.seed-exception",
     "note": "known dropped-tutuq words"
+  },
+  {
+    "input": "qoʻngʻiroq toʻngʻich",
+    "expected": "qönğiroq tönğiç",
+    "rule": "latin.n-gʻ",
+    "note": "gʻ after n is a letter, not part of the ng digraph (Cyrillic қўнғироқ, тўнғич)"
+  },
+  {
+    "input": "Qoʻngʻiroq",
+    "expected": "Qönğiroq",
+    "rule": "latin.n-gʻ.title",
+    "note": "title case"
+  },
+  {
+    "input": "QOʻNGʻIROQ",
+    "expected": "QÖNĞIROQ",
+    "rule": "latin.n-gʻ.upper",
+    "note": "uppercase"
+  },
+  {
+    "input": "qo'ng'iroq qo‘ng‘iroq qoʼngʼiroq",
+    "expected": "qönğiroq qönğiroq qönğiroq",
+    "rule": "latin.n-gʻ.apostrophes",
+    "note": "ASCII, U+2018 and U+02BC apostrophe forms"
+  },
+  {
+    "input": "dengiz teng",
+    "expected": "dengiz teng",
+    "rule": "latin.ng",
+    "note": "plain ng digraph is unchanged"
   }
 ]

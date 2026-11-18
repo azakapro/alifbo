@@ -117,14 +117,12 @@ describe('lossy Cyrillic conversion', () => {
     expect(toCyrillic('https://example.uz/sh Şavkat').text).toBe('https://example.uz/sh Шавкат');
   });
 
-  it('warns when a Latin letter or stray ʻ has no Cyrillic mapping', () => {
+  it('warns when a Latin letter has no Cyrillic mapping', () => {
+    // ngʻ is n + gʻ, so its ʻ is not stray.
     const result = toCyrillic('tongʻ w', { foreignWords: 'transliterate' });
-    expect(result.text).toBe('тонгʻ w');
-    expect(result.warnings).toHaveLength(2);
-    expect(result.warnings.map((warning) => warning.rule)).toEqual([
-      'latin.unmapped',
-      'latin.unmapped',
-    ]);
+    expect(result.text).toBe('тонғ w');
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings.map((warning) => warning.rule)).toEqual(['latin.unmapped']);
     expect(result.warnings.every((warning) => (warning.alternatives?.length ?? 0) === 0)).toBe(
       true,
     );

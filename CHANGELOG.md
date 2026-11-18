@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- `n` followed by `gʻ` is read as `n` + `gʻ`, not as the `ng` digraph plus a stray `ʻ`. `qoʻngʻiroq` now becomes `qönğiroq` (was `qöngʻiroq`) and `қўнғироқ` in `toCyrillic` (was `қўнгʻироқ` with a `latin.unmapped` warning), matching `fromCyrillic('қўнғироқ')`. Affects `toNewLatin`, `toCyrillic` and `foldSearchKey` for every apostrophe form, in TypeScript and Python. The `ng` digraph itself is unchanged.
+
 ## [0.6.0] - 2026-09-16
 
 ### Added
