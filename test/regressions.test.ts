@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fromCyrillic, toCyrillic, toNewLatin, toOldLatin } from '../src/index.js';
+import { foldSearchKey, fromCyrillic, toCyrillic, toNewLatin, toOldLatin } from '../src/index.js';
 
 describe('Cyrillic е/э and ye round-trips', () => {
   // Inverse of the documented fromCyrillic rule: е is "ye" at a word start, after a
@@ -114,5 +114,26 @@ describe('soft sign', () => {
       rule: 'cyrillic.soft-sign.ambiguous',
       alternatives: ['y', ''],
     });
+  });
+});
+
+describe('n followed by gʻ', () => {
+  // The ng digraph must not swallow the g of gʻ: қўнғироқ is written qoʻngʻiroq.
+  it.each([
+    ['қўнғироқ', 'qönğiroq', 'qoʻngʻiroq'],
+    ['тўнғич', 'tönğiç', 'toʻngʻich'],
+    ['ҚЎНҒИРОҚ', 'QÖNĞIROQ', 'QOʻNGʻIROQ'],
+  ])('converts %s consistently', (cyrillic, newLatin, oldLatin) => {
+    expect(fromCyrillic(cyrillic).text).toBe(newLatin);
+    expect(toNewLatin(oldLatin).text).toBe(newLatin);
+    expect(toOldLatin(newLatin).text).toBe(oldLatin);
+    expect(toCyrillic(oldLatin)).toEqual({ text: cyrillic, warnings: [] });
+    expect(toCyrillic(newLatin)).toEqual({ text: cyrillic, warnings: [] });
+  });
+
+  it('keeps NFD input and search keys consistent', () => {
+    expect(toCyrillic('qönğiroq'.normalize('NFD')).text).toBe('қўнғироқ');
+    expect(toNewLatin('qoʻngʻiroq'.normalize('NFD')).text).toBe('qönğiroq');
+    expect(foldSearchKey("qo'ng'iroq")).toBe(foldSearchKey('қўнғироқ'));
   });
 });

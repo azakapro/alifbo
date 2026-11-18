@@ -62,7 +62,12 @@ export function oldLatinCoreMapped(
       index += 2;
       continue;
     }
-    if (options.ngAsDigraph !== false && isPairAt(source, index, 'n', 'g')) {
+    // In `ngʻ` the g belongs to the letter gʻ (Cyrillic нғ, as in қўнғироқ), not to the ng digraph.
+    if (
+      options.ngAsDigraph !== false &&
+      isPairAt(source, index, 'n', 'g') &&
+      source[index + 2] !== 'ʻ'
+    ) {
       if (NG_DIGRAPH_OUTPUT === 'ng') {
         emit(source[index]!, index);
         emit(source[index + 1]!, index + 1);

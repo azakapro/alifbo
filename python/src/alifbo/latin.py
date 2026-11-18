@@ -80,7 +80,13 @@ def old_latin_core_mapped(
             emit(first_case(character, "ç"), index)
             index += 2
             continue
-        if options.ng_as_digraph and _is_pair_at(source, index, "n", "g"):
+        # In "ngʻ" the g belongs to the letter gʻ (Cyrillic нғ, as in қўнғироқ),
+        # not to the ng digraph.
+        if (
+            options.ng_as_digraph
+            and _is_pair_at(source, index, "n", "g")
+            and source[index + 2 : index + 3] != "ʻ"
+        ):
             if NG_DIGRAPH_OUTPUT == "ng":
                 emit(source[index], index)
                 emit(source[index + 1], index + 1)
